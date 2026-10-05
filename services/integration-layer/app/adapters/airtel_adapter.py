@@ -24,12 +24,14 @@ class AirtelAdapter(BaseAdapter):
         if tx_type is None:
             raise AdapterError(f"type inconnu : {t['type']}")
         cp = p.get("counterparty") or {}
+        ts = self.parse_time(t["timestamp"])
         return UnifiedTransaction(
-            transaction_id=t["id"], timestamp=self.parse_time(t["timestamp"]),
+            memo=self.memo(p),
+            transaction_id=t["id"], timestamp=ts,
             user_id=s["customer_id"], wallet_id=s["msisdn"],
             channel="MOBILE_MONEY", operator="AIRTEL", tx_type=tx_type,
             access_channel=d["channel"], amount=float(t["amount"]), currency=t["currency"],
-            amount_usd=self.to_usd(t["amount"], t["currency"]),
+            amount_usd=self.to_usd(t["amount"], t["currency"], ts),
             balance_before_usd=float(s["balance_usd"]), status=t.get("status"),
             counterparty_id=cp.get("msisdn"), agent_id=cp.get("agent_code"),
             merchant_id=cp.get("merchant_code"), merchant_category=cp.get("merchant_category"),
@@ -40,6 +42,7 @@ class AirtelAdapter(BaseAdapter):
 
     def from_unified(self, t: dict) -> dict:
         return {
+            "memo": t.get("memo"),
             "transaction": {"id": t["transaction_id"], "type": REVERSE[t["tx_type"]],
                             "amount": t["amount"], "currency": t["currency"],
                             "timestamp": t["timestamp"].isoformat(), "status": t.get("status")},

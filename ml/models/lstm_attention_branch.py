@@ -71,19 +71,25 @@ def lstm_logit(model: LSTMAttentionBranch, X: np.ndarray, seq_idx: np.ndarray, r
 def train_lstm_branch(X: np.ndarray, y: np.ndarray, seq_idx: np.ndarray, fit_rows: np.ndarray,
                       es_rows: np.ndarray, epochs: int = 8, batch_size: int = 512, lr: float = 1e-3,
                       neg_sample_rate: float = 0.3, patience: int = 2, hidden_dim: int = 64,
-                      seed: int = 42, log=print) -> LSTMAttentionBranch:
+                      seed: int = 42, log=print, weight_decay: float = 1e-5, dropout: float = 0.2) -> LSTMAttentionBranch:
     """Entraînement avec sous-échantillonnage des transactions légitimes à chaque époque
     (toutes les fraudes + neg_sample_rate des légitimes, tirées à nouveau à chaque époque)
     et arrêt précoce sur la PR-AUC de la tranche early_stop."""
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
-    model = LSTMAttentionBranch(X.shape[1], hidden_dim=hidden_dim)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
+    model = LSTMAttentionBranch(X.shape[1], hidden_dim=hidden_dim, dropout=dropout)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     pos_rows, neg_rows = fit_rows[y[fit_rows] == 1], fit_rows[y[fit_rows] == 0]
     ratio = len(neg_rows) * neg_sample_rate / max(len(pos_rows), 1)
     criterion = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(np.sqrt(ratio), dtype=torch.float32))
 
+    # courbes : perte sur un échantillon FIXE de l'entraînement et sur early_stop, toutes deux à la distribution
+    # naturelle (non pondérée) pour être comparables ; la perte « batch » d'entraînement est pondérée et sous-échantillonnée
+    plain = nn.BCEWithLogitsLoss()
+    probe = np.random.default_rng(seed + 1).choice(fit_rows, size=min(20000, len(fit_rows)), replace=False)
+    y_probe, y_es_t = torch.from_numpy(y[probe].astype(np.float32)), torch.from_numpy(y[es_rows].astype(np.float32))
+    history: list[dict] = []
     best_ap, best_state, bad_epochs = -1.0, None, 0
     for epoch in range(1, epochs + 1):
         model.train()
@@ -102,7 +108,13 @@ def train_lstm_branch(X: np.ndarray, y: np.ndarray, seq_idx: np.ndarray, fit_row
             optimizer.step()
             total += loss.item() * len(b)
 
-        ap = average_precision_score(y[es_rows], lstm_logit(model, X, seq_idx, es_rows))
+        es_logit = lstm_logit(model, X, seq_idx, es_rows)
+        ap = average_precision_score(y[es_rows], es_logit)
+        probe_logit = lstm_logit(model, X, seq_idx, probe)
+        history.append({"epoch": epoch, "train_batch_loss": total / len(epoch_rows),
+                        "train_loss": float(plain(torch.from_numpy(probe_logit), y_probe)),
+                        "train_pr_auc": float(average_precision_score(y[probe], probe_logit)),
+                        "val_loss": float(plain(torch.from_numpy(es_logit), y_es_t)), "val_pr_auc": float(ap)})
         log(f"    époque {epoch}/{epochs}  perte={total / len(epoch_rows):.4f}  PR-AUC(early_stop)={ap:.4f}")
         if ap > best_ap + 1e-4:
             best_ap, bad_epochs = ap, 0
@@ -114,4 +126,5 @@ def train_lstm_branch(X: np.ndarray, y: np.ndarray, seq_idx: np.ndarray, fit_row
                 break
     model.load_state_dict(best_state)
     model.eval()
+    model.history = history           # courbes d'apprentissage (voir ml/training/diagnostics.py)
     return model

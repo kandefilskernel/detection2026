@@ -99,8 +99,10 @@ def main():
         r.delete(*old[i:i + 5000])
     store = RedisFeatureStore(r, period_start.timestamp())
     stats = store.bulk_load(ext, sequences)
+    from ml.serving.feature_store import scaler_fingerprint
     r.set(f"{PREFIX}:meta", json.dumps({"seeded_until": str(until), "period_start": str(period_start),
-                                        "n_transactions": n, "seeded_at": time.strftime("%Y-%m-%dT%H:%M:%S")}))
+                                        "n_transactions": n, "seeded_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                                        "scaler_md5": scaler_fingerprint(ARTIFACTS)}))
     print(f"[OK] Redis amorcé en {time.perf_counter() - t0:.0f} s : {stats}")
 
 

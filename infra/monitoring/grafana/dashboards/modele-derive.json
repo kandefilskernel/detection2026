@@ -15,7 +15,7 @@
   ],
   "panels": [
     {
-      "id": 14,
+      "id": 15,
       "type": "stat",
       "title": "Alarme de dérive",
       "datasource": {
@@ -73,7 +73,7 @@
       }
     },
     {
-      "id": 15,
+      "id": 16,
       "type": "stat",
       "title": "Variables comportementales en dérive",
       "datasource": {
@@ -135,7 +135,7 @@
       }
     },
     {
-      "id": 16,
+      "id": 17,
       "type": "stat",
       "title": "PSI du score (prod / validation)",
       "datasource": {
@@ -198,7 +198,7 @@
       }
     },
     {
-      "id": 17,
+      "id": 18,
       "type": "stat",
       "title": "Taux d'alerte (VERIFY + BLOCK)",
       "datasource": {
@@ -261,7 +261,7 @@
       }
     },
     {
-      "id": 18,
+      "id": 19,
       "type": "stat",
       "title": "Fenêtre analysée",
       "datasource": {
@@ -302,7 +302,7 @@
       }
     },
     {
-      "id": 19,
+      "id": 20,
       "type": "timeseries",
       "title": "Décisions par action",
       "datasource": {
@@ -353,7 +353,7 @@
       }
     },
     {
-      "id": 20,
+      "id": 21,
       "type": "timeseries",
       "title": "Niveaux de risque",
       "datasource": {
@@ -404,7 +404,7 @@
       }
     },
     {
-      "id": 21,
+      "id": 22,
       "type": "timeseries",
       "title": "Décisions par canal",
       "datasource": {
@@ -455,7 +455,7 @@
       }
     },
     {
-      "id": 22,
+      "id": 23,
       "type": "timeseries",
       "title": "Distribution des probabilités (part des scores < seuil)",
       "datasource": {
@@ -506,7 +506,7 @@
       }
     },
     {
-      "id": 23,
+      "id": 24,
       "type": "bargauge",
       "title": "KS par variable (top 10)",
       "datasource": {
@@ -569,7 +569,7 @@
       }
     },
     {
-      "id": 24,
+      "id": 25,
       "type": "bargauge",
       "title": "PSI par variable (top 10)",
       "datasource": {
@@ -615,6 +615,242 @@
           },
           "color": {
             "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 26,
+      "type": "stat",
+      "title": "Alarme de nouveauté",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(novelty_alarm)",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 0,
+        "y": 29,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 27,
+      "type": "stat",
+      "title": "Part de comportements nouveaux (attendu : 1 %)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(novelty_rate)",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 4,
+        "y": 29,
+        "w": 5,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.02
+              },
+              {
+                "color": "red",
+                "value": 0.04
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 28,
+      "type": "stat",
+      "title": "PSI du score autoencodeur",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "max(novelty_psi)",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 9,
+        "y": 29,
+        "w": 5,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 3,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 0.2
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      }
+    },
+    {
+      "id": 29,
+      "type": "timeseries",
+      "title": "Violations des lois physiques (par loi et mode)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum(rate(scoring_physics_violations_total[5m])) by (law, mode)",
+          "legendFormat": "{{law}} ({{mode}})",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {
+        "x": 14,
+        "y": 29,
+        "w": 10,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "fillOpacity": 18,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none"
+            }
           }
         },
         "overrides": []

@@ -20,13 +20,14 @@ COPY --from=deps /install /usr/local
 COPY shared/ shared/
 COPY ml/__init__.py ml/__init__.py
 COPY ml/features/ ml/features/
+COPY ml/physics/ ml/physics/
 COPY ml/models/ ml/models/
 COPY ml/serving/ ml/serving/
 COPY ml/artifacts/ ml/artifacts/
 COPY services/scoring-service/app/ app/
 USER app
 EXPOSE 8001
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=15s --start-period=90s --retries=5 \
   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/health').status==200 else 1)"
 # métriques agrégées sur tous les workers (répertoire vidé à chaque démarrage)
 ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus

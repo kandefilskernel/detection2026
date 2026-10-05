@@ -1,0 +1,135 @@
+{
+  "corpus": "test",
+  "n": 61,
+  "n_se": 30,
+  "ingenierie_sociale_MOYEN_ou_plus": {
+    "tp": 22,
+    "fp": 0,
+    "fn": 8,
+    "precision": 1.0,
+    "rappel": 0.733,
+    "f1": 0.846,
+    "f1_ci95": [
+      0.727,
+      0.943
+    ]
+  },
+  "ingenierie_sociale_ELEVE": {
+    "tp": 13,
+    "fp": 0,
+    "fn": 17,
+    "precision": 1.0,
+    "rappel": 0.433,
+    "f1": 0.605,
+    "f1_ci95": [
+      0.409,
+      0.756
+    ]
+  },
+  "erreurs_ingenierie_sociale": [
+    {
+      "texte": "Bonsoir, nous sommes de Vodacom. Une operation suspecte a ete detectee, veuillez nous transmettre le code a 6 chiffres que vous allez recevoir",
+      "attendu": 1,
+      "score": 0.0,
+      "indices": []
+    },
+    {
+      "texte": "Papa c'est moi, j'ai perdu mon telephone, nouveau numero. Je suis a l'hopital apres un accident, envoie 300 USD maintenant",
+      "attendu": 1,
+      "score": 0.0,
+      "indices": []
+    },
+    {
+      "texte": "Votre numero a ete retenu pour un cadeau de 500 USD. Envoyez les frais de livraison pour recevoir",
+      "attendu": 1,
+      "score": 0.0,
+      "indices": []
+    },
+    {
+      "texte": "Bonjour, je vous contacte de la part de votre operateur. Il y a un souci sur votre ligne, pouvez-vous me confirmer les 4 chiffres que vous utilisez pour valider vos operations?",
+      "attendu": 1,
+      "score": 0.0,
+      "indices": []
+    },
+    {
+      "texte": "Mon ami, j'ai un investissement garanti qui double ton argent en 24h, envoie 100 USD a ce numero et garde ca entre nous",
+      "attendu": 1,
+      "score": 0.0,
+      "indices": []
+    },
+    {
+      "texte": "Gagnant du jour! Transferez 15 USD pour activer votre prix",
+      "attendu": 1,
+      "score": 0.3,
+      "indices": [
+        "DEMANDE_TRANSFERT"
+      ]
+    },
+    {
+      "texte": "Salut c'est ton neveu, je suis bloque a la frontiere, envoie 120 USD, ne le dis a personne",
+      "attendu": 1,
+      "score": 0.0,
+      "indices": []
+    },
+    {
+      "texte": "Bonjour madame, vous avez ete tire au sort pour un bon d'achat, rappelez-nous et munissez-vous de votre code secret",
+      "attendu": 1,
+      "score": 0.0,
+      "indices": []
+    }
+  ],
+  "erreurs_sentiment": [
+    {
+      "texte": "Urgent, ma mere est a l'hopital, peux-tu m'aider pour les frais medicaux? je te rembourse samedi",
+      "attendu": "NEGATIF",
+      "obtenu": "NEUTRE",
+      "polarite": 0.0
+    },
+    {
+      "texte": "Cadeau de mariage pour Esther et Jean, felicitations aux maries",
+      "attendu": "POSITIF",
+      "obtenu": "NEUTRE",
+      "polarite": 0.0
+    },
+    {
+      "texte": "Dimanche prochain j'ai gagne le tournoi, je paie la tournee, envoie ta part de l'inscription",
+      "attendu": "POSITIF",
+      "obtenu": "NEUTRE",
+      "polarite": 0.0
+    },
+    {
+      "texte": "Le client Airtel a appele le support, le blocage de la carte SIM est leve",
+      "attendu": "POSITIF",
+      "obtenu": "NEUTRE",
+      "polarite": 0.0
+    },
+    {
+      "texte": "Peux-tu confirmer que tu as bien recu les 40 USD? reponds quand tu peux",
+      "attendu": "NEUTRE",
+      "obtenu": "POSITIF",
+      "polarite": 0.5
+    }
+  ],
+  "sentiment": {
+    "n": 31,
+    "exactitude": 0.839,
+    "matrice (lignes=attendu NEG/NEU/POS)": [
+      [
+        5,
+        1,
+        0
+      ],
+      [
+        0,
+        13,
+        1
+      ],
+      [
+        0,
+        3,
+        8
+      ]
+    ],
+    "negatifs_retrouves": 0.833
+  }
+}

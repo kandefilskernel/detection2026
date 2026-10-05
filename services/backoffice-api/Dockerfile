@@ -9,7 +9,7 @@ COPY services/backoffice-api/alembic/ alembic/
 COPY services/backoffice-api/app/ app/
 USER app
 EXPOSE 8003
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=5 \
   CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8003/health').status==200 else 1)"
 # les migrations sont appliquées à chaque démarrage (idempotent)
 ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus

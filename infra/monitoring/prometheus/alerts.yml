@@ -50,3 +50,29 @@ groups:
         for: 10m
         labels: { severity: moyenne }
         annotations: { summary: "Dérive : variables comportementales ou score déplacés — envisager un réentraînement" }
+      - alert: NouveauxComportements
+        expr: novelty_alarm == 1
+        for: 10m
+        labels: { severity: moyenne }
+        annotations: { summary: "Des comportements jamais vus par le modèle apparaissent en nombre anormal : faire examiner les cas par les analystes (tableau de bord) et envisager un réentraînement" }
+      - alert: ViolationsPhysiquesElevees
+        expr: |
+          sum(rate(scoring_physics_violations_total[10m]))
+            / sum(rate(scoring_decisions_total[10m])) > 0.02
+        for: 10m
+        labels: { severity: moyenne }
+        annotations: { summary: "Plus de 2 % d'opérations violent une loi physique : vague d'attaques, ou coordonnées / bornes à revoir chez l'opérateur" }
+      - alert: NouveauModeleRefuse
+        expr: increase(scoring_model_reload_refused_total[10m]) > 0
+        labels: { severity: haute }
+        annotations: { summary: "Un modèle promu a été refusé par le contrôle de sanité du scoring : l'ancien reste en service, vérifier le dernier réentraînement" }
+      - alert: RelancesScoringFrequentes
+        expr: sum(rate(integration_scoring_retries_total[5m])) / sum(rate(integration_requests_total[5m])) > 0.05
+        for: 5m
+        labels: { severity: moyenne }
+        annotations: { summary: "Plus de 5 % des messages nécessitent une relance du scoring : surcharge ou verrous de profil" }
+      - alert: FeatureStoreIncoherent
+        expr: min(scoring_feature_store_consistent) == 0
+        for: 1m
+        labels: { severity: critique }
+        annotations: { summary: "Le feature store Redis a été amorcé avec d'autres artefacts que le modèle servi : les scores sont faussés, relancer l'amorçage" }

@@ -63,6 +63,9 @@ class ScoredTransaction(Base):
     latency_ms: Mapped[float] = mapped_column(Float)
     degraded: Mapped[bool] = mapped_column(Boolean, default=False)
     explanation: Mapped[dict] = mapped_column(JSONB)
+    # typologie probable (SIM_SWAP, SMURFING, ...) : renseignée pour les transactions signalées
+    fraud_type: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    fraud_type_probability: Mapped[float | None] = mapped_column(Float, nullable=True)
     features: Mapped[dict] = mapped_column(JSONB)
     # étiquette issue du retour des analystes : 1 fraude confirmée, 0 faux positif
     label: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
@@ -71,6 +74,7 @@ class ScoredTransaction(Base):
     __table_args__ = (
         Index("ix_scored_action_time", "action", "tx_time"),
         Index("ix_scored_risk_time", "risk_level", "tx_time"),
+        Index("ix_scored_fraud_type_time", "fraud_type", "tx_time"),
         Index("ix_scored_scored_at", "scored_at"),   # KPIs temps réel (horloge réelle)
     )
 
@@ -87,6 +91,7 @@ class Case(Base):
     fraud_probability: Mapped[float] = mapped_column(Float)
     risk_level: Mapped[str] = mapped_column(String(10), index=True)
     action: Mapped[str] = mapped_column(String(10))
+    fraud_type: Mapped[str | None] = mapped_column(String(24), nullable=True, index=True)
     # OUVERT -> EN_COURS -> FRAUDE_CONFIRMEE | FAUX_POSITIF
     status: Mapped[str] = mapped_column(String(20), default="OUVERT", index=True)
     assigned_to: Mapped[int | None] = mapped_column(ForeignKey("bo_users.id"), nullable=True)
@@ -130,3 +135,27 @@ class ModelRegistry(Base):
     metrics: Mapped[dict] = mapped_column(JSONB)
     trained_on: Mapped[dict] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class RetrainEvent(Base):
+    """Journal de l'apprentissage continu : pourquoi un réentraînement a été demandé, attendu ou lancé,
+    et ce qu'il a donné. Les lignes DEMANDEE sont créées par le back-office (bouton) et prises en charge
+    par le planificateur (handled_at renseigné)."""
+    __tablename__ = "retrain_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    trigger: Mapped[str] = mapped_column(String(12))       # AUTO | MANUEL
+    reasons: Mapped[list] = mapped_column(JSONB, default=list)
+    # DEMANDEE | EN_ATTENTE | CHAMPION | CHALLENGER | REJETE | IGNORE | ERREUR
+    status: Mapped[str] = mapped_column(String(12))
+    detail: Mapped[dict] = mapped_column(JSONB, default=dict)
+    requested_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    handled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class RetrainState(Base):
+    """Dernier relevé des signaux évalués par le planificateur (une seule ligne, id = 1)."""
+    __tablename__ = "retrain_state"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    signals: Mapped[dict] = mapped_column(JSONB)

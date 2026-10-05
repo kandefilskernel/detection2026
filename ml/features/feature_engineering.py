@@ -28,6 +28,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from ml.physics import laws as physics
+
 RAW_DIR = Path("ml/data/raw")
 PROCESSED_DIR = Path("ml/data/processed")
 
@@ -61,6 +63,7 @@ FEATURE_GROUPS = {
     "tx_type": [f"type_{t}" for t in TX_TYPES],
 }
 FEATURE_NAMES = [f for group in FEATURE_GROUPS.values() for f in group]
+PHYSICS_NAMES = physics.PHYSICS_FEATURES      # colonnes supplémentaires du tableau de variables (hors modèle de données)
 META_COLUMNS = ["transaction_id", "timestamp", "user_id", "channel", "tx_type", "amount_usd",
                 "is_fraud", "fraud_type"]
 
@@ -85,6 +88,7 @@ class _UserState:
     hour_cos_sum: float = 0.0
     last_topup_ts: float | None = None
     last_topup_amt: float = 0.0
+    last_province: str | None = None                   # dernière province vue (loi physique de cinématique)
 
 
 class BehavioralFeatureExtractor:
@@ -239,6 +243,11 @@ class BehavioralFeatureExtractor:
 
         for t in TX_TYPES:
             f[f"type_{t}"] = float(tx_type == t)
+
+        # --- lois physiques (hors vecteur d'entrée du modèle de données : valeurs « phys_* » stockées à part)
+        out1h = sum(a for t, a, deb in st.recent if deb and 0 <= ts - t <= HOUR)
+        f.update(physics.evaluate(st.last_province if st.n > 0 else None, prov,
+                                  ts - st.last_ts if st.last_ts is not None else None, amt, bal, is_debit, out1h))
         return f
 
     # ------------------------------------------------------------------ mise à jour
@@ -258,6 +267,7 @@ class BehavioralFeatureExtractor:
         if st.first_ts is None:
             st.first_ts = ts
         st.last_ts = ts
+        st.last_province = tx["location_province"]
         st.recent.append((ts, amt, tx_type in DEBIT_TYPES))
         while st.recent and ts - st.recent[0][0] > WEEK:
             st.recent.popleft()
@@ -320,7 +330,7 @@ def build_feature_table(tx: pd.DataFrame, users: pd.DataFrame,
 
     extractor = BehavioralFeatureExtractor(users, period_start)
     rows = [extractor.process(r) for r in work.to_dict("records")]
-    feats = pd.DataFrame(rows, columns=FEATURE_NAMES).astype(np.float32)
+    feats = pd.DataFrame(rows, columns=FEATURE_NAMES + PHYSICS_NAMES).astype(np.float32)
     meta = tx[[c for c in META_COLUMNS if c in tx.columns]].reset_index(drop=True)
     return pd.concat([meta, feats], axis=1)
 

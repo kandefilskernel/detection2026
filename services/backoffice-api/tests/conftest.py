@@ -19,6 +19,7 @@ TEST_DB = "fraud_test"
 os.environ.update(
     DATABASE_URL=f"postgresql+psycopg2://{PG['user']}:{PG['password']}@{PG['host']}:{PG['port']}/{TEST_DB}",
     KAFKA_ENABLED="false", JWT_SECRET_KEY="test-secret",
+    RAG_INDEX_PATH=str(ROOT / "ml" / "artifacts" / "case_index.npz"),
     BOOTSTRAP_ADMIN_EMAIL="admin@test.local", BOOTSTRAP_ADMIN_PASSWORD="AdminTest-2026!")
 
 

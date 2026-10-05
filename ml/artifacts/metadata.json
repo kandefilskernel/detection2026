@@ -1,5 +1,5 @@
 {
-    "threshold": 0.5171225045356815,
+    "threshold": 0.5384487964065672,
     "input_dim": 58,
     "lstm_hidden_dim": 64,
     "branch_order": [
@@ -8,11 +8,18 @@
         "autoencoder"
     ],
     "meta_learner_coefficients": {
-        "xgboost": 1.3834,
-        "lstm_attention": 1.2967,
-        "autoencoder": 0.2758
+        "xgboost": 1.6897,
+        "lstm_attention": 1.5578,
+        "autoencoder": 0.4608
     },
-    "trained_at": "2026-09-25T23:48:30",
+    "diagnostics": {
+        "xgboost": "SURAPPRENTISSAGE_NET",
+        "lstm_attention": "SURAPPRENTISSAGE_LEGER",
+        "autoencoder": "SAIN",
+        "overfit_net": true,
+        "worst": "SURAPPRENTISSAGE_NET"
+    },
+    "trained_at": "2026-10-05T16:00:12",
     "train_config": {
         "seed": 42,
         "xgb_estimators": 600,
@@ -22,40 +29,40 @@
         "skip_baselines": false,
         "use_mlflow": false
     },
-    "xgb_best_iteration": 234,
+    "xgb_best_iteration": 537,
     "test_metrics": {
-        "n": 50309,
-        "n_fraud": 767,
-        "pr_auc": 0.9911,
-        "roc_auc": 0.9998,
-        "recall_at_1pct_fpr": 0.9987,
-        "precision": 0.9702,
-        "recall": 0.9335,
-        "f1": 0.9515,
-        "false_positive_rate": 0.00044
+        "n": 183240,
+        "n_fraud": 2437,
+        "pr_auc": 0.9955,
+        "roc_auc": 0.9999,
+        "recall_at_1pct_fpr": 0.9996,
+        "precision": 0.9513,
+        "recall": 0.9778,
+        "f1": 0.9644,
+        "false_positive_rate": 0.00067
     },
     "test_metrics_by_channel": {
         "MOBILE_MONEY": {
-            "n": 46226,
-            "n_fraud": 618,
-            "pr_auc": 0.9871,
-            "roc_auc": 0.9998,
-            "recall_at_1pct_fpr": 0.9984,
-            "precision": 0.9659,
-            "recall": 0.9175,
-            "f1": 0.9411,
-            "false_positive_rate": 0.00044
+            "n": 172648,
+            "n_fraud": 2143,
+            "pr_auc": 0.9943,
+            "roc_auc": 0.9999,
+            "recall_at_1pct_fpr": 0.9995,
+            "precision": 0.9448,
+            "recall": 0.9748,
+            "f1": 0.9596,
+            "false_positive_rate": 0.00072
         },
         "VISA_VIRTUAL": {
-            "n": 4083,
-            "n_fraud": 149,
+            "n": 10592,
+            "n_fraud": 294,
             "pr_auc": 1.0,
             "roc_auc": 1.0,
             "recall_at_1pct_fpr": 1.0,
-            "precision": 0.9868,
+            "precision": 1.0,
             "recall": 1.0,
-            "f1": 0.9933,
-            "false_positive_rate": 0.00051
+            "f1": 1.0,
+            "false_positive_rate": 0.0
         }
     }
 }

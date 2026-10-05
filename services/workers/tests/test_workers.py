@@ -17,7 +17,9 @@ EVENT = {
                     "access_channel": "AGENT", "amount": 285000.0, "currency": "CDF", "amount_usd": 100.0,
                     "location_province": "Kinshasa", "device_id": "D1", "agent_id": "A1", "wallet_id": "2438"},
     "decision": {"fraud_probability": 0.97, "risk_level": "CRITIQUE", "action": "BLOCK", "reason": "x",
-                 "rules_triggered": [], "model_version": "v1", "latency_ms": 9.5, "degraded": False},
+                 "rules_triggered": [], "model_version": "v1", "latency_ms": 9.5, "degraded": False,
+                 "fraud_type": "SIM_SWAP", "fraud_type_probability": 0.91,
+                 "fraud_type_candidates": [{"type": "SIM_SWAP", "probability": 0.91}]},
     "explanation": {"top_features": [{"feature": "is_new_device", "shap": 1.2, "value": 1.0}]},
     "features": {"is_new_device": 1.0},
 }
@@ -28,6 +30,10 @@ def test_persister_maps_event_to_row():
     row = to_row(EVENT)
     assert row["tx_time"] == datetime(2025, 11, 2, 21, 15, 7)
     assert row["province"] == "Kinshasa" and row["action"] == "BLOCK" and row["agent_id"] == "A1"
+    assert row["fraud_type"] == "SIM_SWAP" and row["fraud_type_probability"] == 0.91
+    assert row["explanation"]["fraud_type_candidates"][0]["type"] == "SIM_SWAP"
+    assert to_row({**EVENT, "decision": {k: v for k, v in EVENT["decision"].items()
+                                         if not k.startswith("fraud_type")}})["fraud_type"] is None  # anciens événements
 
 
 def test_sms_texts_are_short_and_never_ask_for_pin():

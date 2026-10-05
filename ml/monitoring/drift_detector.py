@@ -11,6 +11,13 @@ Une variable est « en dérive » si (D_KS > 0,1 et p < 0,01) ou PSI > 0,2. Le K
 trop sensible sur de grands échantillons (p minuscule pour un écart négligeable) : on
 combine donc significativité statistique ET taille d'effet.
 
+NOUVEAUX COMPORTEMENTS (nouveauté) : la branche autoencodeur du modèle a appris ce qu'est un
+comportement « habituel » ; son erreur de reconstruction mesure à quel point une transaction
+s'en écarte. Si la part de transactions de la fenêtre dont l'erreur dépasse le 99e centile de la
+référence atteint NOVELTY_RATE (4 % par défaut, soit 4 fois l'attendu), c'est que des
+comportements que le modèle n'a jamais vus apparaissent : alarme de nouveauté, qui peut
+déclencher un réentraînement même si les variables prises une à une ne dérivent pas.
+
 Mode service (--serve) : calcul toutes les INTERVAL secondes, exposé à Prometheus
 (port 9101) ; Grafana affiche les courbes et Prometheus déclenche l'alerte de dérive.
 Mode ponctuel (--once) : rapport JSON (pour le mémoire).
@@ -27,6 +34,8 @@ import numpy as np
 from scipy.stats import ks_2samp
 
 KS_D, KS_P, PSI_MAX = 0.10, 0.01, 0.20
+NOVELTY_Q = 0.99                                  # centile de référence au-delà duquel un comportement est « nouveau »
+NOVELTY_RATE = float(os.getenv("NOVELTY_RATE", "0.04"))   # part de la fenêtre déclenchant l'alarme
 log = logging.getLogger("drift")
 
 # Variables exclues de l'alarme, mais toujours mesurées et affichées :
@@ -83,12 +92,28 @@ def compare(reference: dict, cur_features: np.ndarray, cur_scores: np.ndarray) -
             "alarm": bool(drifted) or score["psi"] > PSI_MAX, "features": per_feature}
 
 
-def fetch_window(engine, window: int) -> tuple[np.ndarray, np.ndarray, list[str]]:
+def novelty(ref_ae: np.ndarray, cur_ae: np.ndarray, min_window: int = 500) -> dict:
+    """Part des transactions courantes plus « étranges » que 99 % de la référence."""
+    cur_ae = cur_ae[np.isfinite(cur_ae)]
+    thr = float(np.quantile(ref_ae, NOVELTY_Q))
+    rate = float((cur_ae > thr).mean()) if len(cur_ae) else 0.0
+    return {"threshold": round(thr, 4), "rate": round(rate, 4), "expected": round(1 - NOVELTY_Q, 4),
+            "psi": round(psi(ref_ae, cur_ae), 4) if len(cur_ae) else 0.0, "n": int(len(cur_ae)),
+            "alarm": bool(len(cur_ae) >= min_window and rate >= NOVELTY_RATE)}
+
+
+def fetch_window(engine, window: int):
+    """Lignes (variables, probabilité, score autoencodeur) des transactions les plus récentes."""
     from sqlalchemy import text
     with engine.connect() as c:
-        rows = c.execute(text("SELECT features, fraud_probability FROM scored_transactions "
-                              "ORDER BY scored_at DESC LIMIT :n"), {"n": window}).all()
+        rows = c.execute(text("SELECT features, fraud_probability, "
+                              "CAST(explanation->'branch_scores'->>'autoencoder' AS float) "
+                              "FROM scored_transactions ORDER BY scored_at DESC LIMIT :n"), {"n": window}).all()
     return rows
+
+
+def ae_array(rows) -> np.ndarray:
+    return np.array([r[2] if r[2] is not None else np.nan for r in rows], dtype=np.float32)
 
 
 def to_arrays(rows, names: list[str]) -> tuple[np.ndarray, np.ndarray]:
@@ -110,6 +135,9 @@ def serve(reference: dict, window: int, interval: int, min_window: int, port: in
     g_score_psi = Gauge("drift_score_psi", "PSI du score de fraude")
     g_window = Gauge("drift_window_size", "Taille de la fenêtre analysée")
     g_last = Gauge("drift_last_run_timestamp", "Horodatage du dernier calcul")
+    g_nov_rate = Gauge("novelty_rate", "Part des transactions dont le comportement est nouveau (autoencodeur)")
+    g_nov_alarm = Gauge("novelty_alarm", "1 si de nouveaux comportements apparaissent en nombre anormal")
+    g_nov_psi = Gauge("novelty_psi", "PSI du score autoencodeur (production vs référence)")
     start_http_server(port)
     engine, _ = make_session_factory()
     names = [str(n) for n in reference["feature_names"]]
@@ -134,6 +162,10 @@ def serve(reference: dict, window: int, interval: int, min_window: int, port: in
                 g_alarm.set(1 if rep["alarm"] else 0)
                 g_score_ks.set(rep["score"]["ks_d"])
                 g_score_psi.set(rep["score"]["psi"])
+                if "ae_scores" in reference:
+                    nov = novelty(reference["ae_scores"], ae_array(rows), min_window)
+                    g_nov_rate.set(nov["rate"]); g_nov_psi.set(nov["psi"]); g_nov_alarm.set(1 if nov["alarm"] else 0)
+                    log.info("nouveauté=%.3f (attendu %.2f) alarme=%s", nov["rate"], nov["expected"], nov["alarm"])
                 g_last.set(time.time())
                 log.info("fenêtre=%d dérive=%d %s score_psi=%.3f", rep["window"], rep["n_drifted"],
                          rep["drifted_features"][:6], rep["score"]["psi"])
@@ -165,6 +197,8 @@ def main():
         feats, scores = to_arrays(fetch_window(engine, a.window), [str(n) for n in reference["feature_names"]])
         rep = compare(reference, feats, scores)
         rep["features"] = {k: v for k, v in rep["features"].items() if v["drift"]}
+        if "ae_scores" in reference:
+            rep["novelty"] = novelty(reference["ae_scores"], ae_array(fetch_window(engine, a.window)))
         print(json.dumps(rep, indent=2, ensure_ascii=False))
 
 

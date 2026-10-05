@@ -65,6 +65,13 @@ def send_sms(wallet: str | None, text: str) -> tuple[str, str]:
         return "ECHEC", str(err)[:500]
 
 
+def fraud_type_text(d: dict) -> str:
+    if not d.get("fraud_type"):
+        return "non déterminée"
+    p = d.get("fraud_type_probability")
+    return f"{d['fraud_type']} ({p:.0%})" if p else d["fraud_type"]
+
+
 def send_email(case_id: int, e: dict) -> tuple[str, str]:
     t, d = e["transaction"], e["decision"]
     top = ", ".join(f["feature"] for f in e["explanation"].get("top_features", [])[:4]) or "n/d"
@@ -76,6 +83,7 @@ def send_email(case_id: int, e: dict) -> tuple[str, str]:
         f"Transaction {t['transaction_id']} du client {t['user_id']} ({t['channel']}, {t.get('operator')})\n"
         f"Montant : {t['amount']} {t['currency']} ({t['amount_usd']:.2f} USD) — {t['location_province']}\n"
         f"Probabilité de fraude : {d['fraud_probability']:.3f} — décision : {d['action']} ({d['reason']})\n"
+        f"Typologie probable : {fraud_type_text(d)}\n"
         f"Règles déclenchées : {', '.join(d['rules_triggered']) or 'aucune'}\n"
         f"Principaux facteurs : {top}\n\nTraiter le dossier dans le tableau de bord.")
     try:
@@ -94,6 +102,7 @@ def handle(batch: list[dict]) -> None:
                 transaction_id=t["transaction_id"], tx_time=datetime.fromisoformat(t["timestamp"]),
                 user_id=t["user_id"], channel=t["channel"], tx_type=t["tx_type"], amount_usd=t["amount_usd"],
                 fraud_probability=d["fraud_probability"], risk_level=d["risk_level"], action=d["action"],
+                fraud_type=d.get("fraud_type"),
             ).on_conflict_do_nothing(index_elements=["transaction_id"]).returning(Case.id))
             if case_id is None:          # message rejoué : dossier déjà ouvert
                 continue
@@ -121,7 +130,7 @@ def handle(batch: list[dict]) -> None:
                 "event_id": uuid.uuid4().hex, "ts": datetime.now(timezone.utc).isoformat(), "actor": "system:alerter",
                 "action": "DOSSIER_OUVERT", "entity": "case", "entity_id": str(case_id),
                 "details": {"transaction_id": t["transaction_id"], "risk_level": d["risk_level"],
-                            "action": d["action"], "notifications": [n.channel for n in notes]},
+                            "fraud_type": d.get("fraud_type"), "action": d["action"], "notifications": [n.channel for n in notes]},
             }).encode(), b"case")
         db.commit()
     producer.flush(5)

@@ -47,3 +47,20 @@ export const FEATURE_LABEL: Record<string, string> = {
   kyc_level: "Niveau KYC", log_account_age_days: "Ancienneté du compte", log_monthly_income: "Revenu mensuel déclaré",
   has_visa_virtual: "Détient une carte virtuelle",
 };
+
+/** Typologies de fraude identifiées par le second étage du modèle. */
+export const FRAUD_TYPE_LABEL: Record<string, string> = {
+  SIM_SWAP: "Échange de SIM", SOCIAL_ENGINEERING: "Ingénierie sociale", ACCOUNT_TAKEOVER: "Prise de contrôle de compte",
+  AGENT_FRAUD: "Fraude d'agent", SMURFING: "Fractionnement (smurfing)", CARD_TESTING: "Test de carte",
+  CNP_FRAUD: "Carte non présente", TOPUP_DRAIN: "Vidage par rechargement", NON_DETERMINEE: "Non déterminée",
+};
+export const FRAUD_TYPE_HELP: Record<string, string> = {
+  SIM_SWAP: "Le fraudeur a repris la ligne du client puis vide le compte depuis un nouvel appareil.",
+  SOCIAL_ENGINEERING: "Le client est manipulé pour envoyer lui-même de l'argent.",
+  ACCOUNT_TAKEOVER: "Accès non autorisé à l'application du client.",
+  AGENT_FRAUD: "Retraits non autorisés par un agent compromis.",
+  SMURFING: "Petits montants répétés vers/depuis des comptes mules pour éviter les seuils.",
+  CARD_TESTING: "Salves de petits achats pour tester une carte volée.",
+  CNP_FRAUD: "Achat en ligne avec les données de la carte, sans la carte.",
+  TOPUP_DRAIN: "Recharge de la carte depuis le portefeuille puis achats pour vider le solde.",
+};

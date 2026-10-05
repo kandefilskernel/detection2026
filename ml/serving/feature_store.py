@@ -24,6 +24,7 @@ Clés Redis (préfixe fs:) :
 from __future__ import annotations
 
 import json
+import zlib
 import time
 import uuid
 from collections import deque
@@ -51,6 +52,7 @@ def user_state_to_json(st: _UserState) -> str:
         "merchants": sorted(st.merchants), "night_count": st.night_count,
         "hour_sin_sum": st.hour_sin_sum, "hour_cos_sum": st.hour_cos_sum,
         "last_topup_ts": st.last_topup_ts, "last_topup_amt": st.last_topup_amt,
+        "last_province": st.last_province,
     }, separators=(",", ":"))
 
 
@@ -65,7 +67,16 @@ def user_state_from_json(raw: str | bytes) -> _UserState:
         merchants=set(d["merchants"]), night_count=d["night_count"],
         hour_sin_sum=d["hour_sin_sum"], hour_cos_sum=d["hour_cos_sum"],
         last_topup_ts=d["last_topup_ts"], last_topup_amt=d["last_topup_amt"],
+        last_province=d.get("last_province"),      # absent des profils enregistrés avant la loi de cinématique
     )
+
+
+def scaler_fingerprint(artifacts_dir) -> str:
+    """Empreinte du scaler : les vecteurs d'historique stockés dans Redis (branche LSTM) et les profils n'ont de sens
+    qu'avec LE scaler et LE découpage qui ont servi à les calculer. Écrite par l'amorçage, vérifiée par le scoring."""
+    import hashlib
+    from pathlib import Path
+    return hashlib.md5((Path(artifacts_dir) / "scaler.pkl").read_bytes()).hexdigest()
 
 
 _RELEASE_LUA = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) end return 0"
@@ -141,14 +152,24 @@ class RedisFeatureStore:
         p.execute()
 
     # ------------------------------------------------------------------ API
-    def compute(self, tx: dict, scale_fn, decide_fn=None) -> dict:
+    def compute(self, tx: dict, scale_fn, decide_fn=None, idem_key: str | None = None, result_fn=None,
+                idem_ttl: int = 1800) -> dict:
         """Calcule les variables de `tx`, (optionnellement) décide, puis met le profil à jour.
 
         decide_fn(features, x, history) -> (résultat, statut) est appelé AVANT la mise à
         jour, sous le verrou du client. Si tx["status"] est None (temps réel : transaction
         pas encore exécutée), le statut renvoyé par decide_fn est enregistré dans le
-        profil — un blocage compte alors comme une tentative échouée."""
+        profil — un blocage compte alors comme une tentative échouée.
+
+        IDEMPOTENCE : si `idem_key` est donné, le résultat (construit par result_fn(out), compressé) est gardé
+        idem_ttl secondes. Une transaction REÇUE DEUX FOIS (relance d'un opérateur après un délai dépassé) renvoie
+        alors la décision d'origine, sans toucher au profil : sinon les compteurs de vélocité compteraient deux
+        fois la même opération et déclencheraient de fausses alertes."""
         with self.user_lock(tx["user_id"]):
+            if idem_key:
+                cached = self.r.get(idem_key)
+                if cached is not None:
+                    return {"cached": json.loads(zlib.decompress(cached))}
             ext, history, known = self._load(tx)
             feats = ext.extract(tx)
             x = scale_fn(feats)
@@ -157,7 +178,12 @@ class RedisFeatureStore:
                 tx = {**tx, "status": status}
             ext.update(tx)
             self._save(ext, tx, x)
-        return {"features": feats, "x": x, "history": history, "known_user": known, "decided": decided}
+            out = {"features": feats, "x": x, "history": history, "known_user": known, "decided": decided}
+            if result_fn is not None:
+                out["result"] = result_fn(out)
+                if idem_key:
+                    self.r.set(idem_key, zlib.compress(json.dumps(out["result"], default=str).encode()), ex=idem_ttl)
+        return out
 
     # ------------------------------------------------------------------ amorçage
     def bulk_load(self, extractor: BehavioralFeatureExtractor, sequences: dict[str, list[np.ndarray]],

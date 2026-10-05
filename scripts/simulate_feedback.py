@@ -27,6 +27,11 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from seed_database import DEMO_USERS  # noqa: E402
 
 
+def base_id(tid: str) -> str:
+    """Identifiant d'origine : les rejeux --fresh-ids ajoutent un suffixe « ~xxxxxx »."""
+    return tid.split("~")[0]
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--url", default="http://localhost:8003")
@@ -49,7 +54,8 @@ def main():
         if not items:
             break
         for case in items:
-            is_fraud = int(truth.loc[case["transaction_id"], "is_fraud"]) if case["transaction_id"] in truth.index else 0
+            tid = base_id(case["transaction_id"])
+            is_fraud = int(truth.loc[tid, "is_fraud"]) if tid in truth.index else 0
             status = "FRAUDE_CONFIRMEE" if is_fraud else "FAUX_POSITIF"
             note = ("Client injoignable puis opération non reconnue ; compte sécurisé." if is_fraud
                     else "Client joint : opération confirmée par le titulaire.")
@@ -68,12 +74,12 @@ def main():
             break
         approved += [t["transaction_id"] for t in res["items"]]
         page += 1
-    missed_ids = [t for t in approved if t in truth.index and int(truth.loc[t, "is_fraud"]) == 1]
+    missed_ids = [t for t in approved if base_id(t) in truth.index and int(truth.loc[base_id(t), "is_fraud"]) == 1]
     complaints = 0
     for tid in missed_ids:
         if rng.random() < a.complaint_rate:
             r = c.post(f"/cases/complaint/{tid}",
-                       json={"note": f"Le client ne reconnaît pas l'opération ({truth.loc[tid, 'fraud_type']})."})
+                       json={"note": f"Le client ne reconnaît pas l'opération ({truth.loc[base_id(tid), 'fraud_type']})."})
             complaints += r.status_code == 201
     missed = len(missed_ids)
     print(f"fraudes approuvées par le modèle : {missed} ; plaintes enregistrées : {complaints}")

@@ -39,6 +39,7 @@ from ml.models.lstm_attention_branch import train_lstm_branch
 from ml.models.meta_learner import BRANCH_NAMES, build_meta_learner, meta_coefficients
 from ml.models.xgboost_branch import train_xgboost_branch
 from ml.preprocessing.train_test_split_normalize import ARTIFACTS_DIR, load_processed
+from ml.training.diagnostics import summarize_training
 from ml.training.evaluation import (best_f1_threshold, evaluate, evaluate_by_group,
                                     recall_by_fraud_type)
 
@@ -88,7 +89,7 @@ def train_pipeline(cfg: TrainConfig) -> dict:
 
     # ---------------------------------------------------------------- 1. branches
     log("\n[1/5] Branche XGBoost...")
-    xgb_model = train_xgboost_branch(X[fit], y[fit], X[es], y[es], cfg.xgb_estimators, cfg.seed)
+    xgb_model = train_xgboost_branch(X[fit], y[fit], X[es], y[es], cfg.xgb_estimators, cfg.seed, record_curves=True)
     log(f"    meilleure itération : {xgb_model.best_iteration}")
 
     log("\n[2/5] Branche Autoencodeur (transactions légitimes uniquement)...")
@@ -169,7 +170,13 @@ def train_pipeline(cfg: TrainConfig) -> dict:
     preds["pred_hybrid"] = (test_scores["hybrid"] >= ensemble.threshold).astype(int)
     preds.to_csv(REPORTS_DIR / "test_predictions.csv", index=False)
 
+    diagnostics = summarize_training(xgb_model, lstm_model, ae_model)
+    (ARTIFACTS_DIR / "training_diagnostics.json").write_text(json.dumps(diagnostics, indent=2, ensure_ascii=False), encoding="utf-8")
+    for name, d in diagnostics.items():
+        if isinstance(d, dict) and "verdict" in d:
+            log(f"    diagnostic {name}: {d['verdict']} (écart de généralisation {d['generalization_gap']:.1%})")
     ensemble.save(ARTIFACTS_DIR, metadata={
+        "diagnostics": {k: (v["verdict"] if isinstance(v, dict) else v) for k, v in diagnostics.items()},
         "trained_at": pd.Timestamp.now().isoformat(timespec="seconds"),
         "train_config": asdict(cfg),
         "xgb_best_iteration": int(xgb_model.best_iteration),

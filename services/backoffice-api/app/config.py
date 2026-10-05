@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     BOOTSTRAP_ADMIN_EMAIL: str = "admin@fraud-rdc.local"
     BOOTSTRAP_ADMIN_PASSWORD: str = "ChangeMoi-2026!"
     CORS_ORIGINS: str = "http://localhost:3000"
+    # Mémoire de cas du RAG (index construit par `python -m ml.rag.case_index`)
+    RAG_INDEX_PATH: str = "ml/artifacts/case_index.npz"
+    RAG_EXTRA_CASES: int = 2000       # verdicts d'analystes récents ajoutés à la mémoire
 
 
 settings = Settings()

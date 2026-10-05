@@ -61,3 +61,12 @@ def test_unknown_type_is_rejected():
     msg["type_operation"] = "INCONNU"
     with pytest.raises(AdapterError):
         OrangeAdapter().to_unified(msg)
+
+
+def test_cdf_amounts_are_converted_at_the_rate_of_their_year():
+    from shared.utils.fx import usd_cdf_rate
+    old = dict(MM_TX, transaction_id="TX-2019", timestamp=datetime(2019, 3, 4, 10, 0), amount=165000.0)
+    u = VodacomAdapter().to_unified(VodacomAdapter().from_unified({**old, "operator": "VODACOM"}))
+    assert u.amount_usd == round(165000.0 / usd_cdf_rate(2019), 2) == 100.0
+    assert VodacomAdapter(2000.0).to_usd(4000, "CDF") == 2.0          # taux fixe imposé : prioritaire
+    assert usd_cdf_rate(2030) == usd_cdf_rate(2025) and usd_cdf_rate(1990) == usd_cdf_rate(2019)
