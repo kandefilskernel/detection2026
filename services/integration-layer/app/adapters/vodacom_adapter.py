@@ -18,13 +18,15 @@ class VodacomAdapter(BaseAdapter):
         tx_type = TYPE_MAP.get(p["TransactionType"])
         if tx_type is None:
             raise AdapterError(f"TransactionType inconnu : {p['TransactionType']}")
+        ts = self.parse_time(p["TransTime"], "%Y%m%d%H%M%S")
         return UnifiedTransaction(
+            memo=self.memo(p),
             transaction_id=p["TransID"],
-            timestamp=self.parse_time(p["TransTime"], "%Y%m%d%H%M%S"),
+            timestamp=ts,
             user_id=p["CustomerID"], wallet_id=p["MSISDN"],
             channel="MOBILE_MONEY", operator="VODACOM", tx_type=tx_type,
             access_channel=p["Channel"], amount=float(p["TransAmount"]), currency=p["Currency"],
-            amount_usd=self.to_usd(p["TransAmount"], p["Currency"]),
+            amount_usd=self.to_usd(p["TransAmount"], p["Currency"], ts),
             balance_before_usd=float(p["AccountBalanceUSD"]),
             status=p.get("ResultStatus"),
             counterparty_id=p.get("CounterpartyMSISDN"), agent_id=p.get("AgentTill"),
@@ -36,6 +38,7 @@ class VodacomAdapter(BaseAdapter):
 
     def from_unified(self, t: dict) -> dict:
         return {
+            "memo": t.get("memo"),
             "TransID": t["transaction_id"], "TransTime": t["timestamp"].strftime("%Y%m%d%H%M%S"),
             "MSISDN": t.get("wallet_id"), "CustomerID": t["user_id"],
             "TransactionType": REVERSE[t["tx_type"]], "TransAmount": t["amount"],

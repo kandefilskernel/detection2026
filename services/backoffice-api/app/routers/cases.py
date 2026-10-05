@@ -13,6 +13,7 @@ from app.db import get_db
 from app.events import Publisher, get_publisher
 from app.security import ROLE_RANK, get_current_user
 from shared.database.models import BackofficeUser, Case, ScoredTransaction
+from shared.nlp.analyzer import analyze
 
 router = APIRouter(prefix="/cases", tags=["dossiers"])
 
@@ -31,6 +32,7 @@ class CaseOut(BaseModel):
     fraud_probability: float
     risk_level: str
     action: str
+    fraud_type: str | None
     status: str
     assigned_to: int | None
     resolution_note: str | None
@@ -49,13 +51,15 @@ class CaseUpdate(BaseModel):
 
 @router.get("")
 def list_cases(db: Session = Depends(get_db), _=Depends(get_current_user),
-               status: str | None = None, risk_level: str | None = None, assigned_to: int | None = None,
+               status: str | None = None, risk_level: str | None = None, fraud_type: str | None = None, assigned_to: int | None = None,
                page: int = Query(1, ge=1), size: int = Query(50, ge=1, le=200)):
     q = select(Case)
     if status:
         q = q.where(Case.status == status)
     if risk_level:
         q = q.where(Case.risk_level == risk_level)
+    if fraud_type:
+        q = q.where(Case.fraud_type == fraud_type)
     if assigned_to is not None:
         q = q.where(Case.assigned_to == assigned_to)
     total = db.scalar(select(func.count()).select_from(q.subquery()))
@@ -85,17 +89,62 @@ def customer_complaint(transaction_id: str, body: Complaint, db: Session = Depen
     if c is None:
         c = Case(transaction_id=tx.transaction_id, tx_time=tx.tx_time, user_id=tx.user_id, channel=tx.channel,
                  tx_type=tx.tx_type, amount_usd=tx.amount_usd, fraud_probability=tx.fraud_probability,
-                 risk_level=tx.risk_level, action=tx.action)
+                 risk_level=tx.risk_level, action=tx.action, fraud_type=tx.fraud_type)
         db.add(c)
     elif c.status in FINAL:
         raise HTTPException(409, "dossier déjà clos")
+    nlp = analyze(body.note)
+    se = nlp["social_engineering"]
+    # une plainte qui décrit une manipulation renseigne la typologie des fraudes que le modèle n'avait pas signalées
+    from_text = tx.fraud_type is None and se["level"] == "ELEVE"
+    if from_text:
+        tx.fraud_type = c.fraud_type = "SOCIAL_ENGINEERING"
     c.status, c.resolution_note = "FRAUDE_CONFIRMEE", f"Plainte client : {body.note}"
     c.resolved_by, c.resolved_at, c.assigned_to = user.id, now, c.assigned_to or user.id
     tx.label, tx.labeled_at = 1, now
     db.commit()
     pub.feedback(tx.transaction_id, 1, user.email, c.id)
     pub.audit(user.email, "PLAINTE_CLIENT", "transaction", tx.transaction_id,
-              {"case_id": c.id, "decision_modele": tx.action})
+              {"case_id": c.id, "decision_modele": tx.action,
+               "sentiment_plainte": nlp["sentiment"]["label"], "emotions": nlp["sentiment"]["emotions"],
+               "indices_ingenierie_sociale": [x["category"] for x in se["cues"]],
+               "score_ingenierie_sociale": se["score"], "type_deduit_de_la_plainte": from_text})
+    return c
+
+
+class Review(BaseModel):
+    verdict: str = Field(pattern="^(FRAUDE|LEGITIME)$")
+    note: str = Field(min_length=5, max_length=2000)
+
+
+@router.post("/review/{transaction_id}", response_model=CaseOut, status_code=201)
+def review_transaction(transaction_id: str, body: Review, db: Session = Depends(get_db),
+                       user: BackofficeUser = Depends(get_current_user), pub: Publisher = Depends(get_publisher)):
+    """Revue d'une transaction par un analyste (par exemple un comportement nouveau signalé par la détection de
+    nouveauté), alerte ou non. Le verdict devient une étiquette pour le prochain réentraînement."""
+    tx = db.scalar(select(ScoredTransaction).where(ScoredTransaction.transaction_id == transaction_id))
+    if tx is None:
+        raise HTTPException(404, "transaction introuvable")
+    if tx.label is not None:
+        raise HTTPException(409, "transaction déjà étiquetée")
+    now = datetime.now(timezone.utc)
+    c = db.scalar(select(Case).where(Case.transaction_id == transaction_id))
+    if c is None:
+        c = Case(transaction_id=tx.transaction_id, tx_time=tx.tx_time, user_id=tx.user_id, channel=tx.channel,
+                 tx_type=tx.tx_type, amount_usd=tx.amount_usd, fraud_probability=tx.fraud_probability,
+                 risk_level=tx.risk_level, action=tx.action, fraud_type=tx.fraud_type)
+        db.add(c)
+    elif c.status in FINAL:
+        raise HTTPException(409, "dossier déjà clos")
+    fraud = body.verdict == "FRAUDE"
+    c.status = "FRAUDE_CONFIRMEE" if fraud else "FAUX_POSITIF"
+    c.resolution_note = f"Revue d'analyste : {body.note}"
+    c.resolved_by, c.resolved_at, c.assigned_to = user.id, now, c.assigned_to or user.id
+    tx.label, tx.labeled_at = int(fraud), now
+    db.commit()
+    pub.feedback(tx.transaction_id, int(fraud), user.email, c.id)
+    pub.audit(user.email, "REVUE_ANALYSTE", "transaction", tx.transaction_id,
+              {"case_id": c.id, "verdict": body.verdict, "decision_modele": tx.action})
     return c
 
 

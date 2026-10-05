@@ -19,12 +19,14 @@ class OrangeAdapter(BaseAdapter):
         tx_type = TYPE_MAP.get(p["type_operation"])
         if tx_type is None:
             raise AdapterError(f"type_operation inconnu : {p['type_operation']}")
+        ts = self.parse_time(p["date_heure"], FMT)
         return UnifiedTransaction(
-            transaction_id=p["id_transaction"], timestamp=self.parse_time(p["date_heure"], FMT),
+            memo=self.memo(p),
+            transaction_id=p["id_transaction"], timestamp=ts,
             user_id=p["id_client"], wallet_id=p["numero_client"],
             channel="MOBILE_MONEY", operator="ORANGE", tx_type=tx_type,
             access_channel=p["canal"], amount=float(p["montant"]), currency=p["devise"],
-            amount_usd=self.to_usd(p["montant"], p["devise"]),
+            amount_usd=self.to_usd(p["montant"], p["devise"], ts),
             balance_before_usd=float(p["solde_avant_usd"]), status=p.get("statut"),
             counterparty_id=p.get("beneficiaire"), agent_id=p.get("code_agent"),
             merchant_id=p.get("code_marchand"), merchant_category=p.get("categorie_marchand"),
@@ -35,6 +37,7 @@ class OrangeAdapter(BaseAdapter):
 
     def from_unified(self, t: dict) -> dict:
         return {
+            "memo": t.get("memo"),
             "id_transaction": t["transaction_id"], "date_heure": t["timestamp"].strftime(FMT),
             "numero_client": t.get("wallet_id"), "id_client": t["user_id"],
             "type_operation": REVERSE[t["tx_type"]], "montant": t["amount"], "devise": t["currency"],

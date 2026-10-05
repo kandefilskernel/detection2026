@@ -20,8 +20,20 @@ Hypothèses de simulation (à citer dans le mémoire) :
     - plafonds KYC par transaction : paramètres de simulation, PAS les plafonds officiels BCC
     - cartes Visa virtuelles prépayées, alimentées depuis le portefeuille Mobile Money
 
+Mode pluriannuel (--multi-year, 2019-2025 par défaut) : réalisme sur plusieurs années
+    - ouverture progressive des comptes (35 % existants au départ, les autres ouverts au fil du temps) ;
+    - croissance de l'activité par client (+8 %/an) ;
+    - lancement de la carte Visa virtuelle à une date donnée (2021-01-01 par défaut : hypothèse) ;
+    - évolution des typologies de fraude d'une année à l'autre (FRAUD_TRENDS : hypothèses de simulation,
+      pas des statistiques officielles) -> dérive de concept réaliste entre entraînement et test ;
+    - taux de change USD/CDF par année (shared/utils/fx.py, valeurs approximatives) ;
+    - voyages légitimes PHYSIQUEMENT cohérents : séjours de plusieurs jours, temps de trajet respecté
+      (aucune opération pendant le trajet), agents de la province visitée.
+
 Usage :
     python ml/generator/generate_synthetic_data.py --n-users 3000 --n-days 180 --seed 42
+    python ml/generator/generate_synthetic_data.py --multi-year                     # 2019-01-01 -> 2025-12-31
+    python ml/generator/generate_synthetic_data.py --multi-year --n-users 800 --output-dir ml/data/raw
 """
 from __future__ import annotations
 
@@ -32,8 +44,16 @@ import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+import sys
+
 import numpy as np
 import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:                     # lancé comme script : rendre `shared` et `ml` importables
+    sys.path.insert(0, str(ROOT))
+from ml.physics.laws import PROVINCE_COORDS, haversine_km, min_travel_hours  # noqa: E402
+from shared.utils.fx import usd_cdf_rate  # noqa: E402
 
 logger = logging.getLogger("synthetic_generator")
 
@@ -113,6 +133,29 @@ CARD_FRAUD_MIX = {"CARD_TESTING": 0.35, "CNP_FRAUD": 0.40, "TOPUP_DRAIN": 0.25}
 
 MM, CARD = "MOBILE_MONEY", "VISA_VIRTUAL"
 
+# Intensité relative de chaque typologie par année (mode pluriannuel). HYPOTHÈSES DE SIMULATION inspirées des
+# tendances générales du secteur (essor des applications et des arnaques à distance, contrôle renforcé des agents),
+# pas des statistiques officielles. Une année hors table prend la valeur de l'année la plus proche.
+FRAUD_TRENDS = {
+    "SIM_SWAP":           {2019: 0.6, 2020: 0.8, 2021: 1.0, 2022: 1.3, 2023: 1.4, 2024: 1.2, 2025: 1.0},
+    "SOCIAL_ENGINEERING": {2019: 0.7, 2020: 1.1, 2021: 1.0, 2022: 1.1, 2023: 1.3, 2024: 1.5, 2025: 1.6},
+    "ACCOUNT_TAKEOVER":   {2019: 0.4, 2020: 0.6, 2021: 0.8, 2022: 1.0, 2023: 1.2, 2024: 1.4, 2025: 1.5},
+    "AGENT_FRAUD":        {2019: 1.5, 2020: 1.4, 2021: 1.2, 2022: 1.0, 2023: 0.8, 2024: 0.7, 2025: 0.6},
+    "SMURFING":           {2019: 1.0, 2020: 1.0, 2021: 1.0, 2022: 1.1, 2023: 1.1, 2024: 1.0, 2025: 1.0},
+    "CARD_TESTING":       {2021: 1.0, 2022: 1.3, 2023: 1.2, 2024: 1.0, 2025: 0.9},
+    "CNP_FRAUD":          {2021: 0.8, 2022: 1.0, 2023: 1.2, 2024: 1.3, 2025: 1.4},
+    "TOPUP_DRAIN":        {2021: 0.6, 2022: 0.9, 2023: 1.1, 2024: 1.3, 2025: 1.4},
+}
+# Voyages légitimes par an selon le segment (mode « voyages réalistes »)
+TRIPS_PER_YEAR = {"etudiant": 1.5, "commercant": 4.0, "salarie": 2.0, "informel": 1.0, "agriculteur": 0.5,
+                  "diaspora_beneficiaire": 1.0}
+
+
+def _trend(fraud_type: str, year: int) -> float:
+    t = FRAUD_TRENDS[fraud_type]
+    ys = sorted(t)
+    return t[min(max(year, ys[0]), ys[-1])]
+
 
 @dataclass
 class GeneratorConfig:
@@ -130,6 +173,15 @@ class GeneratorConfig:
     n_mm_merchants: int = 600
     n_card_merchants: int = 300
     output_dir: str = "ml/data/raw"
+    # --- réalisme pluriannuel (désactivé par défaut : le jeu 180 jours d'origine reste reproductible à l'identique)
+    end_date: str | None = None           # si donné, remplace n_days (période inclusive)
+    onboarding: bool = False              # ouverture progressive des comptes
+    initial_user_share: float = 0.35      # part des comptes déjà ouverts au début de la période
+    activity_growth: float = 0.0          # croissance annuelle de l'activité par client
+    visa_launch_date: str | None = None   # aucune opération carte avant cette date
+    fraud_trends: bool = False            # mélange des typologies variable selon l'année
+    fx_by_year: bool = False              # taux de change USD/CDF de l'année de l'opération
+    realistic_travel: bool = False        # voyages physiquement cohérents (au lieu d'un changement ponctuel de province)
 
 
 class SyntheticDataGenerator:
@@ -137,6 +189,8 @@ class SyntheticDataGenerator:
         self.cfg = cfg
         self.rng = np.random.default_rng(cfg.seed)
         self.start = pd.Timestamp(cfg.start_date)
+        if cfg.end_date:
+            cfg.n_days = int((pd.Timestamp(cfg.end_date) - self.start).days) + 1
         self.horizon_s = cfg.n_days * 86400
         self.warmup_days = min(14, cfg.n_days // 3)  # historique minimal avant toute fraude
         self._episode_counter = 0
@@ -145,6 +199,12 @@ class SyntheticDataGenerator:
         self.day_weekday = dates.weekday.to_numpy()
         self.day_dom = dates.day.to_numpy()
         self.day_month = dates.month.to_numpy()
+        self.day_year = dates.year.to_numpy()
+        self.years_elapsed = np.arange(cfg.n_days) / 365.25
+        self.visa_launch_day = (max(0, int((pd.Timestamp(cfg.visa_launch_date) - self.start).days))
+                                if cfg.visa_launch_date else 0)
+        self._fraud_ctx = None            # (client, typologie) de l'épisode en cours de génération
+        self._trend_weights: dict = {}
 
     # ------------------------------------------------------------------ identifiants
     def _ids(self, prefix: str, n: int, digits: int) -> list[str]:
@@ -229,9 +289,19 @@ class SyntheticDataGenerator:
         typical = np.array([SEGMENTS[s][1] for s in segment]) * rng.lognormal(0, 0.4, n)
         tx_rate = np.array([SEGMENTS[s][2] for s in segment]) * rng.lognormal(0, 0.5, n)
 
-        # Changement de téléphone légitime (cas difficile pour le modèle)
+        # Ouverture des comptes : une part existe dès le début, les autres ouvrent au fil de la période, de plus
+        # en plus nombreux (adoption croissante du Mobile Money) : densité linéaire croissante
+        if cfg.onboarding:
+            existing = rng.random(n) < cfg.initial_user_share
+            later = np.sqrt(rng.random(n)) * (cfg.n_days - 30)
+            join_day = np.where(existing, 0, later).astype(int)
+        else:
+            join_day = np.zeros(n, dtype=int)
+
+        # Changement de téléphone légitime (cas difficile pour le modèle), après l'ouverture du compte
         changes = rng.random(n) < cfg.legit_device_change_rate
-        change_ts = np.where(changes, rng.uniform(0.2, 0.9, n) * self.horizon_s, np.inf)
+        span = self.horizon_s - join_day * 86400
+        change_ts = np.where(changes, join_day * 86400 + rng.uniform(0.2, 0.9, n) * span, np.inf)
 
         users = pd.DataFrame({
             "user_id": [f"U{i:06d}" for i in range(n)],
@@ -247,6 +317,7 @@ class SyntheticDataGenerator:
             "secondary_device_id": self._device_ids(n),
             "device_change_ts": change_ts,
             "account_age_days": rng.integers(30, 3000, n),
+            "join_day": join_day,
             "monthly_income_usd": (typical * rng.uniform(8, 20, n)).round(0),
             "preferred_currency": np.where(rng.random(n) < 0.6, "CDF", "USD"),
             "has_visa_virtual": has_visa,
@@ -259,6 +330,8 @@ class SyntheticDataGenerator:
             # Vérité terrain cachée : NE PAS utiliser comme variable
             "is_mule_account": rng.random(n) < cfg.mule_account_rate,
         })
+        # compte ouvert pendant la période : ancienneté au début de la période négative (|valeur| jours après)
+        users["account_age_days"] = np.where(join_day > 0, -join_day, users["account_age_days"])
         if not users["is_mule_account"].any():
             users.loc[0, "is_mule_account"] = True
 
@@ -277,7 +350,33 @@ class SyntheticDataGenerator:
             contacts.append(c)
         users["home_agents"] = home_agents
         users["contacts"] = contacts
+        users["trips"] = [self._plan_trips(u) for u in users.itertuples()] if cfg.realistic_travel else [[]] * n
         return users
+
+    def _plan_trips(self, u) -> list:
+        """Séjours hors de la province d'origine : (départ, arrivée, départ retour, arrivée retour, province).
+        Durées de trajet >= durée physique minimale (ml.physics.laws) : la loi de cinématique est respectée."""
+        rng = self.rng
+        start_s = u.join_day * 86400 + 7 * 86400
+        years = max(0.0, (self.horizon_s - start_s) / (365.25 * 86400))
+        others = [p for p in PROVINCES if p != u.province]
+        w = np.array([PROVINCES[p][1] for p in others])
+        trips = []
+        for _ in range(rng.poisson(TRIPS_PER_YEAR[u.segment] * years)):
+            dep = rng.uniform(start_s, self.horizon_s)
+            dest = others[rng.choice(len(others), p=w / w.sum())]
+            km = haversine_km(PROVINCE_COORDS[u.province], PROVINCE_COORDS[dest])
+            arr = dep + min_travel_hours(km) * 3600 * rng.uniform(1.3, 3.0)      # attente, correspondances, route
+            back = arr + rng.lognormal(np.log(5), 0.6) * 86400
+            home = back + min_travel_hours(km) * 3600 * rng.uniform(1.3, 3.0)
+            trips.append((dep, arr, back, home, dest))
+        trips.sort()
+        out, last_end = [], -1.0
+        for tr in trips:                                       # séjours qui se chevauchent : on garde le premier
+            if tr[0] > last_end:
+                out.append(tr)
+                last_end = tr[3]
+        return out
 
     # ------------------------------------------------------------------ outils communs
     def _hour_probs(self, u) -> np.ndarray:
@@ -286,17 +385,36 @@ class SyntheticDataGenerator:
             w[[22, 23, 0, 1, 2, 3]] += 2.0
         return w / w.sum()
 
+    def _first_day(self, u, card: bool = False) -> int:
+        """Premier jour d'activité possible : ouverture du compte (et lancement de la carte Visa pour le canal carte)."""
+        return max(int(u.join_day), self.visa_launch_day if card else 0)
+
     def _sample_seconds(self, day: int, hour_probs: np.ndarray) -> float:
         hour = self.rng.choice(24, p=hour_probs)
         return day * 86400 + hour * 3600 + self.rng.uniform(0, 3600)
 
     def _fraud_start(self, night_bias: float) -> float:
-        day = self.rng.integers(self.warmup_days, self.cfg.n_days)
+        day = self._fraud_day()
         if self.rng.random() < night_bias:
             hour = self._pick(NIGHT_HOURS)
         else:
             hour = self.rng.choice(24, p=BASE_HOUR_WEIGHTS / BASE_HOUR_WEIGHTS.sum())
         return day * 86400 + hour * 3600 + self.rng.uniform(0, 3600)
+
+    def _fraud_day(self) -> int:
+        """Jour de début d'un épisode : après l'ouverture du compte (et le lancement de la carte) plus une période
+        d'historique ; en mode « tendances », tiré selon l'intensité de la typologie pour chaque année."""
+        if self._fraud_ctx is None:
+            return int(self.rng.integers(self.warmup_days, self.cfg.n_days))
+        if len(self._fraud_ctx) == 3:              # jour imposé par le tirage pluriannuel
+            return int(self._fraud_ctx[2])
+        u, ftype = self._fraud_ctx
+        first = min(self._first_day(u, card=ftype in CARD_FRAUD_MIX) + self.warmup_days, self.cfg.n_days - 1)
+        if not self.cfg.fraud_trends or ftype not in self._trend_weights:
+            return int(self.rng.integers(first, self.cfg.n_days))      # mode d'origine : tirage uniforme
+        days = np.arange(first, self.cfg.n_days)
+        w = self._trend_weights[ftype][first:]
+        return int(self.rng.choice(days, p=w / w.sum()))
 
     def _device_at(self, u, ts: float) -> str:
         return u.secondary_device_id if ts >= u.device_change_ts else u.primary_device_id
@@ -338,7 +456,8 @@ class SyntheticDataGenerator:
         merch_by_cat = {k: g["merchant_id"].tolist() for k, g in mm_merch.groupby("category")}
         agents_by_prov = agents.groupby("province")["agent_id"].apply(list).to_dict()
         month_end = (self.day_dom >= 25) | (self.day_dom <= 3)
-        day_factor = WEEKDAY_FACTOR[self.day_weekday] * np.where(month_end, 1.25, 1.0)
+        day_factor = (WEEKDAY_FACTOR[self.day_weekday] * np.where(month_end, 1.25, 1.0)
+                      * (1 + self.cfg.activity_growth) ** self.years_elapsed)
         pay_cats = [c for c in MM_MERCHANT_CATEGORIES if c not in BILL_CATEGORIES]
 
         def merchant_for(u, cat):
@@ -349,12 +468,13 @@ class SyntheticDataGenerator:
             hp = self._hour_probs(u)
             probs = MM_TYPE_PROBS.get(u.segment, MM_TYPE_PROBS["default"])
             counts = rng.poisson(u.tx_rate_per_day * day_factor)
+            counts[: self._first_day(u)] = 0                        # aucune opération avant l'ouverture du compte
             for day in np.repeat(np.arange(self.cfg.n_days), counts):
                 ts = self._sample_seconds(day, hp)
                 tx_type = MM_TX_TYPES[rng.choice(len(MM_TX_TYPES), p=probs)]
                 r = self._row(u, ts, MM, tx_type)
                 amount = u.typical_amount_usd * AMOUNT_MULTIPLIER[tx_type] * rng.lognormal(0, 0.7)
-                if rng.random() < 0.04:  # voyage légitime
+                if not self.cfg.realistic_travel and rng.random() < 0.04:  # voyage légitime (mode d'origine)
                     r["location_province"] = self._pick(list(PROVINCES))
                 if tx_type in ("P2P_SEND", "P2P_RECEIVE"):
                     r["counterparty_id"] = (self._pick(u.contacts) if rng.random() < 0.85
@@ -374,9 +494,12 @@ class SyntheticDataGenerator:
                 r["amount_usd"] = self._clip_amount(amount, u)
                 rows.append(r)
 
-            # Frais scolaires de septembre : montants élevés mais légitimes
-            sept_days = np.where((self.day_month == 9) & (self.day_dom <= 20))[0]
-            if len(sept_days) and rng.random() < 0.5:
+            # Frais scolaires de septembre (une fois par année scolaire) : montants élevés mais légitimes
+            sept = (self.day_month == 9) & (self.day_dom <= 20) & (np.arange(self.cfg.n_days) >= self._first_day(u))
+            for year in np.unique(self.day_year[sept]):
+                sept_days = np.where(sept & (self.day_year == year))[0]
+                if rng.random() >= 0.5:
+                    continue
                 for _ in range(rng.integers(1, 3)):
                     r = self._row(u, self._sample_seconds(self._pick(sept_days), hp), MM, "BILL_PAYMENT")
                     r["merchant_id"], r["merchant_category"], r["merchant_country"] = merchant_for(u, "ECOLE"), "ECOLE", "CD"
@@ -392,14 +515,16 @@ class SyntheticDataGenerator:
         cats = list(CARD_MERCHANT_CATEGORIES)
         cw = np.array([CARD_MERCHANT_CATEGORIES[c][0] for c in cats])
         cw = cw / cw.sum()
-        months = self.cfg.n_days / 30.0
-
         for u in users[users.has_visa_virtual].itertuples():
+            first = self._first_day(u, card=True)
+            if first >= self.cfg.n_days:
+                continue
+            months = (self.cfg.n_days - first) / 30.0
             hp = self._hour_probs(u)
             activity = rng.lognormal(0, 0.4)
 
             for _ in range(rng.poisson(1.0 * months * activity)):  # recharges « de précaution »
-                r = self._row(u, self._sample_seconds(rng.integers(self.cfg.n_days), hp), CARD, "CARD_TOPUP")
+                r = self._row(u, self._sample_seconds(rng.integers(first, self.cfg.n_days), hp), CARD, "CARD_TOPUP")
                 r["amount_usd"] = self._clip_amount(u.typical_amount_usd * 1.5 * rng.lognormal(0, 0.5), u)
                 rows.append(r)
 
@@ -408,7 +533,7 @@ class SyntheticDataGenerator:
                 for _ in range(rng.integers(1, 3)):
                     m = by_cat[self._pick(SUBSCRIPTION_CATEGORIES)].sample(1, random_state=rng).iloc[0]
                     dom = rng.integers(1, 29)
-                    for day in np.where(self.day_dom == dom)[0]:
+                    for day in np.where((self.day_dom == dom) & (np.arange(self.cfg.n_days) >= first))[0]:
                         r = self._row(u, self._sample_seconds(day, hp), CARD, "CARD_PURCHASE")
                         r.update(merchant_id=m.merchant_id, merchant_category=m.category,
                                  merchant_country=m.country, amount_usd=float(m.typical_amount_usd))
@@ -418,7 +543,7 @@ class SyntheticDataGenerator:
                 cat = cats[rng.choice(len(cats), p=cw)]
                 m = by_cat[cat].sample(1, random_state=rng).iloc[0]
                 sigma = CARD_MERCHANT_CATEGORIES[cat][2]
-                r = self._row(u, self._sample_seconds(rng.integers(self.cfg.n_days), hp), CARD, "CARD_PURCHASE")
+                r = self._row(u, self._sample_seconds(rng.integers(first, self.cfg.n_days), hp), CARD, "CARD_PURCHASE")
                 r.update(merchant_id=m.merchant_id, merchant_category=cat, merchant_country=m.country,
                          amount_usd=self._clip_amount(m.typical_amount_usd * rng.lognormal(0, sigma), u))
                 if rng.random() < 0.05:  # achat pendant un voyage
@@ -588,7 +713,8 @@ class SyntheticDataGenerator:
             rows.append(r)
         return self._mark_fraud(rows, "TOPUP_DRAIN")
 
-    def inject_fraud(self, users, agents, merchants, n_normal_mm: int, n_normal_card: int) -> list[dict]:
+    def inject_fraud(self, users, agents, merchants, n_normal_mm: int, n_normal_card: int,
+                     volume_by_day: dict | None = None) -> list[dict]:
         rng = self.rng
         ctx = {
             "agents": agents,
@@ -620,6 +746,20 @@ class SyntheticDataGenerator:
         budgets.update({k: w * mm_target for k, w in MM_FRAUD_MIX.items()})
         budgets.update({k: w * card_target for k, w in CARD_FRAUD_MIX.items()})
 
+        # victimes possibles : compte ouvert (et carte lancée) assez tôt pour avoir un historique avant l'épisode
+        def eligible(pool, card):
+            first = np.maximum(pool["join_day"].to_numpy(), self.visa_launch_day if card else 0)
+            return pool[first + self.warmup_days < self.cfg.n_days - 1]
+        handlers = {k: (fn, eligible(pool, k in CARD_FRAUD_MIX)) for k, (fn, pool) in handlers.items()}
+        # mode pluriannuel : le jour de chaque épisode est tiré selon (volume d'opérations normales du canal ce jour-là
+        # x tendance de la typologie pour l'année), PUIS la victime parmi les clients déjà actifs ce jour-là ; le taux
+        # de fraude suit ainsi l'activité et les tendances, sans se concentrer sur les dernières années
+        multi = self.cfg.fraud_trends or self.cfg.onboarding or self.visa_launch_day > 0
+        trend = {k: np.array([_trend(k, int(y)) if self.cfg.fraud_trends else 1.0 for y in self.day_year]) for k in handlers}
+        if multi and volume_by_day is not None:
+            self._trend_weights = {k: trend[k] * np.maximum(volume_by_day[CARD if k in CARD_FRAUD_MIX else MM], 0)
+                                   for k in handlers}
+
         rows: list[dict] = []
         for fraud_type, budget in budgets.items():
             fn, pool = handlers[fraud_type]
@@ -627,9 +767,28 @@ class SyntheticDataGenerator:
                 logger.warning("Aucune victime possible pour %s, typologie ignorée", fraud_type)
                 continue
             produced = 0
+            if multi and volume_by_day is not None:
+                w = self._trend_weights[fraud_type].astype(float)
+                w[: self.warmup_days] = 0
+                first = np.maximum(pool["join_day"].to_numpy(), self.visa_launch_day if fraud_type in CARD_FRAUD_MIX else 0)
+                while produced < budget and w.sum() > 0:
+                    day = int(rng.choice(self.cfg.n_days, p=w / w.sum()))
+                    cand = pool[first + self.warmup_days <= day]
+                    if cand.empty:
+                        w[day] = 0
+                        continue
+                    u = next(cand.sample(1, random_state=rng).itertuples())
+                    self._fraud_ctx = (u, fraud_type, day)
+                    ep_rows = fn(u, ctx)
+                    self._fraud_ctx = None
+                    rows.extend(ep_rows)
+                    produced += len(ep_rows)
+                continue
             while produced < budget:
                 u = next(pool.sample(1, random_state=rng).itertuples())
+                self._fraud_ctx = (u, fraud_type)
                 ep_rows = fn(u, ctx)
+                self._fraud_ctx = None
                 rows.extend(ep_rows)
                 produced += len(ep_rows)
         return rows
@@ -640,7 +799,7 @@ class SyntheticDataGenerator:
         y compris ceux dictés par un escroc, sont arrondis : 500 FC en CDF, 1 USD / 0,5 USD
         en USD. Restent non arrondis : les prix fixés par les marchands (achats carte) et
         les montants de vidage calculés sur le solde (encore inconnus ici, NaN)."""
-        rate = self.cfg.usd_cdf_rate
+        rate = self._rates(df)
         currency = np.where(df["channel"] == CARD, "USD",
                             users["preferred_currency"].to_numpy()[df["uidx"].to_numpy()])
         df["currency"] = currency
@@ -648,11 +807,46 @@ class SyntheticDataGenerator:
         explicit = ~np.isnan(amt) & (df["tx_type"].to_numpy() != "CARD_PURCHASE")
         cdf = explicit & (currency == "CDF")
         step = np.where(df["tx_type"].to_numpy() == "AIRTIME", 100, 500)
-        amt[cdf] = np.maximum(step[cdf], np.round(amt[cdf] * rate / step[cdf]) * step[cdf]) / rate
+        amt[cdf] = np.maximum(step[cdf], np.round(amt[cdf] * rate[cdf] / step[cdf]) * step[cdf]) / rate[cdf]
         usd = explicit & (currency == "USD")
         amt[usd] = np.where(amt[usd] >= 5, np.round(amt[usd]), np.maximum(0.5, np.round(amt[usd] * 2) / 2))
         df["amount_usd"] = amt
         return df
+
+    def _rates(self, df: pd.DataFrame) -> np.ndarray:
+        """Taux USD/CDF de chaque opération : fixe (mode d'origine) ou celui de son année (mode pluriannuel)."""
+        if not self.cfg.fx_by_year:
+            return np.full(len(df), self.cfg.usd_cdf_rate)
+        years = (self.start + pd.to_timedelta(df["ts"].to_numpy(), unit="s")).year
+        return np.array([usd_cdf_rate(int(y)) for y in years])
+
+    def _apply_trips(self, df: pd.DataFrame, users: pd.DataFrame, agents: pd.DataFrame) -> pd.DataFrame:
+        """Voyages réalistes : les opérations LÉGITIMES d'un client en séjour sont localisées dans la province
+        visitée (agents de cette province pour les dépôts et retraits) ; celles qui tomberaient pendant un trajet
+        sont supprimées (on n'opère pas en vol ou sur la route). Les épisodes de fraude gardent leur logique."""
+        if not self.cfg.realistic_travel:
+            return df
+        agents_by_prov = agents.groupby("province")["agent_id"].apply(list).to_dict()
+        trips = users["trips"].to_numpy()
+        ts, uidx = df["ts"].to_numpy(), df["uidx"].to_numpy()
+        legit = df["is_fraud"].to_numpy() == 0
+        prov = df["location_province"].to_numpy(dtype=object).copy()
+        agent = df["agent_id"].to_numpy(dtype=object).copy()
+        keep = np.ones(len(df), dtype=bool)
+        for i in np.flatnonzero(legit):
+            for dep, arr, back, home, dest in trips[uidx[i]]:
+                if ts[i] < dep:
+                    break
+                if dep <= ts[i] < arr or back <= ts[i] < home:
+                    keep[i] = False
+                    break
+                if arr <= ts[i] < back:
+                    prov[i] = dest
+                    if isinstance(agent[i], str):
+                        agent[i] = self._pick(agents_by_prov.get(dest, [agent[i]]))
+                    break
+        df["location_province"], df["agent_id"] = prov, agent
+        return df[keep].reset_index(drop=True)
 
     def _apply_balances(self, df: pd.DataFrame, users: pd.DataFrame) -> pd.DataFrame:
         """Rejoue les transactions dans l'ordre chronologique pour tenir les soldes.
@@ -721,22 +915,25 @@ class SyntheticDataGenerator:
         normal_card = self.generate_normal_card(users, merchants)
         logger.info("Transactions normales : %d Mobile Money, %d Visa", len(normal_mm), len(normal_card))
 
-        fraud = self.inject_fraud(users, agents, merchants, len(normal_mm), len(normal_card))
+        volume_by_day = {MM: np.bincount([int(r["ts"] // 86400) for r in normal_mm], minlength=self.cfg.n_days)[: self.cfg.n_days],
+                         CARD: np.bincount([int(r["ts"] // 86400) for r in normal_card], minlength=self.cfg.n_days)[: self.cfg.n_days]}
+        fraud = self.inject_fraud(users, agents, merchants, len(normal_mm), len(normal_card), volume_by_day)
         logger.info("Transactions frauduleuses injectées : %d", len(fraud))
 
         df = pd.DataFrame(normal_mm + normal_card + fraud)
         df = df[df["ts"] < self.horizon_s].sort_values("ts", kind="mergesort").reset_index(drop=True)
+        df = self._apply_trips(df, users, agents)
         df = self._round_amounts(df, users)
         df = self._apply_balances(df, users)
 
-        rate = self.cfg.usd_cdf_rate
+        rate = self._rates(df)
         df["amount"] = np.where(df["currency"] == "CDF", (df["amount_usd"] * rate).round(0), df["amount_usd"])
         df["timestamp"] = self.start + pd.to_timedelta(df["ts"], unit="s")
         df["timestamp"] = df["timestamp"].dt.floor("s")
         df.insert(0, "transaction_id", [f"TX{x:016x}" for x in self.rng.integers(0, 2 ** 63, len(df))])
         df = df[TRANSACTION_COLUMNS]
 
-        users_out = users.drop(columns=["device_change_ts", "home_agents", "contacts",
+        users_out = users.drop(columns=["device_change_ts", "home_agents", "contacts", "trips", "join_day",
                                         "secondary_device_id", "tx_rate_per_day", "hour_shift", "night_owl"])
         logger.info("Génération terminée en %.1f s", time.perf_counter() - t0)
         return {"transactions": df, "users": users_out, "agents": agents, "merchants": merchants}
@@ -818,6 +1015,10 @@ def summarize(tx: pd.DataFrame) -> dict:
         "failure_rate_legit": round(float((tx.loc[tx.is_fraud == 0, "status"] != "SUCCESS").mean()), 5),
         "failure_rate_fraud": round(float((tx.loc[tx.is_fraud == 1, "status"] != "SUCCESS").mean()), 5),
         "tx_type_distribution": tx["tx_type"].value_counts().to_dict(),
+        "by_year": {int(y): {"n": int(len(g)), "fraud_rate": round(float(g["is_fraud"].mean()), 5),
+                             "visa_share": round(float((g["channel"] == "VISA_VIRTUAL").mean()), 4),
+                             "fraud_by_type": g.loc[g.is_fraud == 1, "fraud_type"].value_counts().to_dict()}
+                    for y, g in tx.groupby(pd.to_datetime(tx["timestamp"]).dt.year)},
     }
 
 
@@ -831,12 +1032,28 @@ def parse_args() -> GeneratorConfig:
     p.add_argument("--mm-fraud-rate", type=float, default=d.mm_fraud_rate)
     p.add_argument("--card-fraud-rate", type=float, default=d.card_fraud_rate)
     p.add_argument("--visa-adoption-multiplier", type=float, default=d.visa_adoption_multiplier)
-    p.add_argument("--output-dir", default=d.output_dir)
+    p.add_argument("--output-dir", default=None)
+    p.add_argument("--end-date", default=None, help="fin de période (inclusive) ; remplace --n-days")
+    p.add_argument("--visa-launch-date", default=None)
+    p.add_argument("--multi-year", action="store_true",
+                   help="jeu pluriannuel réaliste : 2019-01-01 -> 2025-12-31, ouvertures de comptes, croissance, "
+                        "lancement Visa, tendances des fraudes, taux de change par année, voyages réalistes")
     a = p.parse_args()
+    if a.multi_year:
+        return GeneratorConfig(
+            n_users=a.n_users if a.n_users != d.n_users else 500, seed=a.seed,
+            start_date=a.start_date if a.start_date != d.start_date else "2019-01-01",
+            end_date=a.end_date or "2025-12-31",
+            mm_fraud_rate=a.mm_fraud_rate, card_fraud_rate=a.card_fraud_rate,
+            visa_adoption_multiplier=(a.visa_adoption_multiplier if a.visa_adoption_multiplier != d.visa_adoption_multiplier
+                                      else 2.5),
+            onboarding=True, activity_growth=0.08, visa_launch_date=a.visa_launch_date or "2021-01-01",
+            fraud_trends=True, fx_by_year=True, realistic_travel=True,
+            output_dir=a.output_dir or "ml/data/raw_2019_2025")
     return GeneratorConfig(n_users=a.n_users, n_days=a.n_days, start_date=a.start_date, seed=a.seed,
                            mm_fraud_rate=a.mm_fraud_rate, card_fraud_rate=a.card_fraud_rate,
-                           visa_adoption_multiplier=a.visa_adoption_multiplier,
-                           output_dir=a.output_dir)
+                           visa_adoption_multiplier=a.visa_adoption_multiplier, end_date=a.end_date,
+                           visa_launch_date=a.visa_launch_date, output_dir=a.output_dir or d.output_dir)
 
 
 def main() -> None:

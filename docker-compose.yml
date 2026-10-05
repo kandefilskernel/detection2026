@@ -83,6 +83,8 @@ services:
       REDIS_URL: redis://redis:6379/0
     volumes:
       - ./ml/data:/srv/ml/data:ro
+      # les artefacts MONTÉS (pas ceux figés dans l'image) : même scaler et même découpage que le modèle servi
+      - ./ml/artifacts:/srv/ml/artifacts:ro
     depends_on:
       redis:
         condition: service_healthy
@@ -93,6 +95,7 @@ services:
     container_name: nuru_scoring
     restart: unless-stopped
     environment:
+      PHYSICS_MODE: enforce           # lois physiques : off | shadow (information seule) | enforce (vérification imposée)
       REDIS_URL: redis://redis:6379/0
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       SCORING_API_KEYS: ${SCORING_API_KEYS:-dev-scoring-key}
@@ -135,6 +138,9 @@ services:
       POSTGRES_HOST: postgres
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       CORS_ORIGINS: http://localhost:3000,http://localhost
+      RAG_INDEX_PATH: /srv/ml/artifacts/case_index.npz
+    volumes:
+      - ./ml/artifacts:/srv/ml/artifacts:ro
     ports:
       - "8003:8003"
     depends_on:
@@ -218,6 +224,7 @@ services:
     env_file: .env
     environment:
       POSTGRES_HOST: postgres
+      NOVELTY_RATE: "0.04"             # part de comportements « jamais vus » qui déclenche l'alarme de nouveauté
     volumes:
       - ./ml/artifacts:/srv/ml/artifacts:ro
     depends_on:
@@ -236,6 +243,8 @@ services:
       PROMETHEUS_URL: http://prometheus:9090
       RETRAIN_CHECK_INTERVAL_S: "600"
       RETRAIN_NEW_LABELS: "500"
+      RETRAIN_NEW_TX: "20000"          # nouvelles données : transactions scorées depuis le dernier entraînement
+      RETRAIN_COOLDOWN_H: "6"          # repos entre deux entraînements automatiques
       MLFLOW_TRACKING_URI: http://mlflow:5000
     volumes:
       - ./ml/artifacts:/srv/ml/artifacts          # écrit le nouveau champion

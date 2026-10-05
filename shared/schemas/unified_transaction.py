@@ -81,6 +81,8 @@ class UnifiedTransaction(BaseModel):
     device_type: str = Field("smartphone", pattern="^(smartphone|feature_phone)$")
     ip_country: str | None = None
     location_province: str
+    # Motif / référence saisi par l'émetteur (optionnel) : analysé par le NLP, jamais stocké en clair.
+    memo: str | None = Field(None, max_length=500)
 
     @field_validator(*ID_FIELDS, mode="before")
     @classmethod

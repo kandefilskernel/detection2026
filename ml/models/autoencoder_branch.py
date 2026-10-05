@@ -51,19 +51,23 @@ def train_autoencoder_branch(X_fit_legit: np.ndarray, X_es_legit: np.ndarray, ep
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     X_es_t = torch.from_numpy(X_es_legit)
 
+    history: list[dict] = []
     best, best_state, bad = float("inf"), None, 0
     for epoch in range(1, epochs + 1):
         model.train()
         order = rng.permutation(len(X_fit_legit))
+        total = 0.0
         for s in range(0, len(order), batch_size):
             xb = torch.from_numpy(X_fit_legit[order[s:s + batch_size]])
             optimizer.zero_grad()
             loss = torch.mean((model(xb) - xb) ** 2)
             loss.backward()
             optimizer.step()
+            total += loss.item() * len(xb)
         model.eval()
         with torch.no_grad():
             es_loss = model.reconstruction_error(X_es_t).mean().item()
+        history.append({"epoch": epoch, "train_loss": total / len(order), "val_loss": es_loss})
         if epoch == 1 or epoch % 5 == 0:
             log(f"    époque {epoch}/{epochs}  erreur(early_stop, légitimes)={es_loss:.4f}")
         if es_loss < best - 1e-5:
@@ -76,4 +80,5 @@ def train_autoencoder_branch(X_fit_legit: np.ndarray, X_es_legit: np.ndarray, ep
                 break
     model.load_state_dict(best_state)
     model.eval()
+    model.history = history           # courbes d'apprentissage (voir ml/training/diagnostics.py)
     return model

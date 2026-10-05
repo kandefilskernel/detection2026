@@ -8,14 +8,19 @@ param(
     [switch]$SkipGeneration,
     [int]$Users = 3000,
     [int]$Days = 180,
-    [double]$VisaAdoption = 2.5
+    [double]$VisaAdoption = 2.5,
+    [switch]$MultiYear          # jeu pluriannuel 2019-2025 (ouvertures de comptes, tendances des fraudes, taux par année)
 )
 $ErrorActionPreference = "Stop"
 Set-Location (Split-Path $PSScriptRoot -Parent)
 
 if (-not $SkipGeneration) {
     Write-Host "`n=== Phase 1 : génération des données synthétiques ===" -ForegroundColor Cyan
-    python ml/generator/generate_synthetic_data.py --n-users $Users --n-days $Days --visa-adoption-multiplier $VisaAdoption
+    if ($MultiYear) {
+        python ml/generator/generate_synthetic_data.py --multi-year --output-dir ml/data/raw
+    } else {
+        python ml/generator/generate_synthetic_data.py --n-users $Users --n-days $Days --visa-adoption-multiplier $VisaAdoption
+    }
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
@@ -27,6 +32,10 @@ Write-Host "`n=== Phase 3 : entraînement et comparaison des modèles ===" -Fore
 $trainArgs = @()
 if ($Quick) { $trainArgs += "--quick" }
 python -m ml.training.train_model @trainArgs
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Write-Host "`n=== Typologie de fraude (second étage : quel type de fraude ?) ===" -ForegroundColor Cyan
+python -m ml.training.train_fraud_type
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "`n=== Référence de dérive (supervision du modèle en production) ===" -ForegroundColor Cyan

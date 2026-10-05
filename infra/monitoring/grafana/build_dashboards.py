@@ -57,6 +57,9 @@ system = dashboard("sante-systeme", "Santé du système", [
           12, 12, 12, 8, unit="reqps", legends=["{{worker}}"]),
     panel("API back-office : requêtes par code", ['sum(rate(http_requests_total[1m])) by (status)'], 0, 20, 12, 8,
           unit="reqps", legends=["{{status}}"]),
+    panel("Relances et doublons (par min)", ['sum(rate(integration_scoring_retries_total[1m])) * 60',
+                                            'sum(rate(scoring_duplicates_total[1m])) * 60'], 0, 28, 12, 8,
+          legends=["relances du scoring", "transactions reçues en double"]),
     panel("Redis : mémoire et clés", ["redis_memory_used_bytes", "sum(redis_db_keys)"], 12, 20, 6, 8,
           legends=["mémoire", "clés"]),
     panel("PostgreSQL : connexions actives", ['sum(pg_stat_activity_count{state="active"})'], 18, 20, 6, 8),
@@ -85,6 +88,14 @@ model = dashboard("modele-derive", "Modèle, décisions et dérive", [
           legends=["{{feature}}"], thresholds=[(None, "green"), (0.1, "orange"), (0.2, "red")], decimals=3),
     panel("PSI par variable (top 10)", ["topk(10, drift_psi)"], 12, 20, 12, 9, "bargauge",
           legends=["{{feature}}"], thresholds=[(None, "green"), (0.1, "orange"), (0.2, "red")], decimals=3),
+    panel("Alarme de nouveauté", ["max(novelty_alarm)"], 0, 29, 4, 4, "stat", thresholds=[(None, "green"), (1, "red")]),
+    panel("Part de comportements nouveaux (attendu : 1 %)", ["max(novelty_rate)"], 4, 29, 5, 4, "stat", "percentunit",
+          decimals=1, thresholds=[(None, "green"), (0.02, "orange"), (0.04, "red")]),
+    panel("PSI du score autoencodeur", ["max(novelty_psi)"], 9, 29, 5, 4, "stat", decimals=3,
+          thresholds=[(None, "green"), (0.1, "orange"), (0.2, "red")]),
+    panel("Violations des lois physiques (par loi et mode)",
+          ['sum(rate(scoring_physics_violations_total[5m])) by (law, mode)'], 14, 29, 10, 4, unit="reqps",
+          legends=["{{law}} ({{mode}})"]),
 ])
 
 OUT.mkdir(exist_ok=True)

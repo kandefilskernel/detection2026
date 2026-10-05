@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     # Séparées par des virgules ; à remplacer en production (secret Kubernetes).
     SCORING_API_KEYS: str = "dev-scoring-key"
     EXPLAIN_TOP_K: int = 6
+    # Durée pendant laquelle une transaction déjà scorée renvoie sa décision d'origine (relances des opérateurs)
+    IDEMPOTENCY_TTL_S: int = 1800
+    # Lois physiques : "off" (ignorées), "shadow" (calculées, affichées et comptées, sans effet sur la décision),
+    # "enforce" (une violation nette de la cinématique impose une vérification, par défaut). Repasser en « shadow »
+    # si, sur les données réelles de l'opérateur, trop d'opérations légitimes violent la cinématique.
+    PHYSICS_MODE: str = "enforce"
 
 
 settings = Settings()

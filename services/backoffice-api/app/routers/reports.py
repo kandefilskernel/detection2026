@@ -70,6 +70,51 @@ def breakdown(dimension: str = Query("channel", pattern="^(channel|operator|tx_t
     """, m=minutes)
 
 
+# Fraude = alerte (VERIFY/BLOCK) non classée faux positif, ou fraude confirmée (plainte, verdict)
+FRAUD_WHERE = """scored_at >= now() - make_interval(mins => :m)
+    AND ((action <> 'APPROVE' AND coalesce(label, 1) = 1) OR label = 1)"""
+
+
+@router.get("/fraud-map")
+def fraud_map(minutes: int = Query(60 * 24, ge=1, le=60 * 24 * 30), limit: int = Query(1000, ge=1, le=5000),
+              db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """Localisation des fraudes : agrégats par province + chaque fraude (la plus récente d'abord).
+    La donnée de localisation transmise par les opérateurs est la province, pas des coordonnées GPS."""
+    provinces = _rows(db, f"""
+        SELECT coalesce(province, 'N/A') AS province, count(*) AS frauds,
+               count(*) FILTER (WHERE label = 1)        AS confirmed,
+               count(*) FILTER (WHERE action = 'BLOCK') AS blocked,
+               coalesce(sum(amount_usd), 0)             AS amount_usd,
+               max(fraud_probability)                   AS max_probability
+        FROM scored_transactions WHERE {FRAUD_WHERE}
+        GROUP BY 1 ORDER BY frauds DESC
+    """, m=minutes)
+    frauds = _rows(db, f"""
+        SELECT transaction_id, tx_time, scored_at, user_id, channel, operator, tx_type, amount_usd,
+               province, fraud_probability, risk_level, action, label, fraud_type
+        FROM scored_transactions WHERE {FRAUD_WHERE}
+        ORDER BY scored_at DESC LIMIT :l
+    """, m=minutes, l=limit)
+    total = sum(p["frauds"] for p in provinces)
+    return {"window_minutes": minutes, "total": total, "truncated": total > len(frauds),
+            "provinces": provinces, "frauds": frauds}
+
+
+@router.get("/fraud-types")
+def fraud_types(minutes: int = Query(60 * 24, ge=1, le=60 * 24 * 30),
+                db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """Répartition des fraudes par typologie (SIM swap, ingénierie sociale, smurfing...)."""
+    return _rows(db, f"""
+        SELECT coalesce(fraud_type, 'NON_DETERMINEE') AS fraud_type, count(*) AS frauds,
+               count(*) FILTER (WHERE action = 'BLOCK') AS blocked,
+               count(*) FILTER (WHERE label = 1)        AS confirmed,
+               coalesce(sum(amount_usd), 0)             AS amount_usd,
+               avg(fraud_probability)                   AS avg_probability
+        FROM scored_transactions WHERE {FRAUD_WHERE}
+        GROUP BY 1 ORDER BY frauds DESC
+    """, m=minutes)
+
+
 @router.get("/model-performance")
 def model_performance(db: Session = Depends(get_db), _=Depends(require_role("SUPERVISEUR"))):
     """Précision observée grâce aux verdicts des analystes (dossiers clos)."""

@@ -28,7 +28,9 @@ def to_row(e: dict) -> dict:
         "risk_level": d["risk_level"], "action": d["action"], "reason": d["reason"][:255],
         "rules_triggered": d["rules_triggered"], "model_version": d["model_version"],
         "latency_ms": d["latency_ms"], "degraded": d["degraded"],
-        "explanation": e["explanation"], "features": e["features"],
+        "fraud_type": d.get("fraud_type"), "fraud_type_probability": d.get("fraud_type_probability"),
+        "explanation": {**e["explanation"], "fraud_type_candidates": d.get("fraud_type_candidates") or []},
+        "features": e["features"],
     }
 
 

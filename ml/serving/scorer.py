@@ -41,6 +41,9 @@ class ScoreResult:
     attention: list
     degraded: bool
     degraded_branches: list
+    fraud_type: str | None = None              # typologie la plus probable (si la transaction est suspecte)
+    fraud_type_probability: float | None = None
+    fraud_type_candidates: list | None = None  # [{"type", "probability"}], 3 meilleures
 
 
 class HybridScorer:
@@ -72,6 +75,41 @@ class HybridScorer:
         best = getattr(self.model.xgb, "best_iteration", None)
         self._iter_range = (0, best + 1) if best is not None else (0, 0)
         self.model_version = str(self.metadata.get("trained_at", "inconnue"))
+        self._load_fraud_type(d)
+
+    def _load_fraud_type(self, d: Path) -> None:
+        """Classifieur de typologie de fraude (optionnel : absent = pas de typologie)."""
+        self._type_booster = None
+        mfile, lfile = d / "fraud_type_xgb.pkl", d / "fraud_types.json"
+        if not (mfile.exists() and lfile.exists()):
+            return
+        labels = json.loads(lfile.read_text(encoding="utf-8"))
+        if labels["feature_names"] != self.feature_names:
+            raise RuntimeError("fraud_types.json ne correspond pas aux variables : réentraîner le classifieur de typologie")
+        bundle = joblib.load(mfile)
+        self._type_booster = bundle["model"].get_booster()
+        self._type_booster.set_param({"nthread": 1})
+        self._type_range = (0, int(bundle["best_iteration"]) + 1)
+        self.fraud_types = labels["classes"]
+        self._types_by_channel = labels["types_by_channel"]
+
+    def classify_fraud_type(self, x: np.ndarray, channel: str | None) -> tuple[str, float, list] | None:
+        """Probabilités par typologie, restreintes à celles possibles pour le canal."""
+        if self._type_booster is None:
+            return None
+        proba = self._type_booster.inplace_predict(
+            x.reshape(1, -1), iteration_range=self._type_range, predict_type="value")[0].astype(np.float64)
+        allowed = self._types_by_channel.get(channel)
+        if allowed:
+            proba = proba * np.array([t in allowed for t in self.fraud_types])
+        total = proba.sum()
+        if total <= 0:
+            return None
+        proba = proba / total
+        order = np.argsort(-proba)[:3]
+        cands = [{"type": self.fraud_types[i], "probability": round(float(proba[i]), 4)}
+                 for i in order if proba[i] > 0]
+        return cands[0]["type"], cands[0]["probability"], cands
 
     # ------------------------------------------------------------------ prétraitement
     def scale(self, feats: dict) -> np.ndarray:
@@ -92,7 +130,7 @@ class HybridScorer:
 
     # ------------------------------------------------------------------ scoring
     def score(self, x: np.ndarray, history: list[np.ndarray], explain: bool | str = "auto",
-              top_k: int = 6) -> ScoreResult:
+              top_k: int = 6, channel: str | None = None) -> ScoreResult:
         """explain : True (toujours), False (jamais) ou "auto" : SHAP seulement à partir du
         risque MOYEN (p ≥ seuil/5). Le calcul SHAP exact coûte ~7 ms ; les ~98 % de
         transactions à risque faible n'en ont pas besoin en temps réel."""
@@ -138,6 +176,9 @@ class HybridScorer:
             top = [{"feature": self.feature_names[i], "shap": round(float(shap[i]), 4),
                     "value": round(float(raw_vals[i]), 4)} for i in order]
 
+        # typologie : seulement si la transaction n'est pas manifestement saine (coût ~0,3 ms)
+        ftype = self.classify_fraud_type(x, channel) if prob >= 0.01 else None
+
         return ScoreResult(
             probability=prob,
             branch_scores={k: round(v, 4) for k, v in scores.items()},
@@ -146,4 +187,7 @@ class HybridScorer:
             attention=attention,
             degraded=bool(degraded),
             degraded_branches=degraded,
+            fraud_type=ftype[0] if ftype else None,
+            fraud_type_probability=ftype[1] if ftype else None,
+            fraud_type_candidates=ftype[2] if ftype else None,
         )

@@ -1,0 +1,172 @@
+{
+  "n_train": 2953,
+  "n_test": 2437,
+  "classes": [
+    "ACCOUNT_TAKEOVER",
+    "AGENT_FRAUD",
+    "CARD_TESTING",
+    "CNP_FRAUD",
+    "SIM_SWAP",
+    "SMURFING",
+    "SOCIAL_ENGINEERING",
+    "TOPUP_DRAIN"
+  ],
+  "accuracy": 0.9622,
+  "top2_accuracy": 1.0,
+  "macro_f1": 0.9713,
+  "baseline_majority_accuracy": 0.2889,
+  "per_class": {
+    "ACCOUNT_TAKEOVER": {
+      "n": 406,
+      "precision": 0.8756,
+      "recall": 0.936,
+      "f1": 0.9048
+    },
+    "AGENT_FRAUD": {
+      "n": 181,
+      "precision": 0.9577,
+      "recall": 1.0,
+      "f1": 0.9784
+    },
+    "CARD_TESTING": {
+      "n": 81,
+      "precision": 0.9753,
+      "recall": 0.9753,
+      "f1": 0.9753
+    },
+    "CNP_FRAUD": {
+      "n": 131,
+      "precision": 0.9847,
+      "recall": 0.9847,
+      "f1": 0.9847
+    },
+    "SIM_SWAP": {
+      "n": 623,
+      "precision": 0.9557,
+      "recall": 0.9005,
+      "f1": 0.9273
+    },
+    "SMURFING": {
+      "n": 303,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "SOCIAL_ENGINEERING": {
+      "n": 630,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "TOPUP_DRAIN": {
+      "n": 82,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    }
+  },
+  "by_channel": {
+    "MOBILE_MONEY": {
+      "n": 2143,
+      "accuracy": 0.9589,
+      "macro_f1": 0.9621
+    },
+    "VISA_VIRTUAL": {
+      "n": 294,
+      "accuracy": 0.9864,
+      "macro_f1": 0.9867
+    }
+  },
+  "confusion_matrix": [
+    [
+      380,
+      0,
+      0,
+      0,
+      26,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      181,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      79,
+      2,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      2,
+      129,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      54,
+      8,
+      0,
+      0,
+      561,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      303,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      630,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      82
+    ]
+  ],
+  "best_iteration": 205,
+  "split_bounds": {
+    "start": "2019-01-01 00:25:59",
+    "early_stop_from": "2023-03-02 09:59:20.820000",
+    "val_from": "2023-11-25 21:33:28.200000",
+    "test_from": "2024-12-13 10:39:21.600000",
+    "end": "2025-12-31 23:45:15"
+  },
+  "note": "Étiquettes issues du générateur synthétique : les typologies sont celles que le simulateur injecte.",
+  "seconds": 20
+}

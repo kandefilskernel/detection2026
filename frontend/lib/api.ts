@@ -12,8 +12,15 @@ export function getToken(): string | null {
 export function getUser(): User | null {
   try { const raw = localStorage.getItem(USER_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
 }
+/** Témoin de session lu par middleware.ts (le jeton, lui, reste dans localStorage). */
+const SESSION_COOKIE = "fraud-rdc-session";
+function setSessionCookie(on: boolean) {
+  document.cookie = `${SESSION_COOKIE}=${on ? "1" : ""}; path=/; SameSite=Strict${on ? "" : "; Max-Age=0"}`;
+}
+
 export function logout() {
   try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); } catch { /* navigation privée */ }
+  setSessionCookie(false);
   window.location.href = "/login";
 }
 
@@ -46,5 +53,6 @@ export async function login(email: string, password: string): Promise<User> {
   if (!res.ok) throw new ApiError(res.status, data.detail ?? "connexion impossible");
   localStorage.setItem(TOKEN_KEY, data.access_token);
   localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+  setSessionCookie(true);
   return data.user;
 }

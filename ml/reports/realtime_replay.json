@@ -1,0 +1,143 @@
+{
+  "ACCOUNT_TAKEOVER": {
+    "n": 46,
+    "detectees": 46,
+    "taux_detection": 1.0,
+    "bloquees": 46,
+    "type_correct_parmi_detectees": 0.9783,
+    "type_correct_parmi_toutes": 0.9783
+  },
+  "AGENT_FRAUD": {
+    "n": 31,
+    "detectees": 31,
+    "taux_detection": 1.0,
+    "bloquees": 31,
+    "type_correct_parmi_detectees": 1.0,
+    "type_correct_parmi_toutes": 1.0
+  },
+  "CARD_TESTING": {
+    "n": 11,
+    "detectees": 11,
+    "taux_detection": 1.0,
+    "bloquees": 11,
+    "type_correct_parmi_detectees": 1.0,
+    "type_correct_parmi_toutes": 1.0
+  },
+  "CNP_FRAUD": {
+    "n": 18,
+    "detectees": 18,
+    "taux_detection": 1.0,
+    "bloquees": 18,
+    "type_correct_parmi_detectees": 1.0,
+    "type_correct_parmi_toutes": 1.0
+  },
+  "LEGITIME": {
+    "n": 18883,
+    "detectees": 67,
+    "taux_detection": 0.0035,
+    "bloquees": 5
+  },
+  "SIM_SWAP": {
+    "n": 112,
+    "detectees": 112,
+    "taux_detection": 1.0,
+    "bloquees": 112,
+    "type_correct_parmi_detectees": 0.9196,
+    "type_correct_parmi_toutes": 0.9196
+  },
+  "SOCIAL_ENGINEERING": {
+    "n": 55,
+    "detectees": 54,
+    "taux_detection": 0.9818,
+    "bloquees": 48,
+    "type_correct_parmi_detectees": 1.0,
+    "type_correct_parmi_toutes": 0.9818
+  },
+  "TOPUP_DRAIN": {
+    "n": 6,
+    "detectees": 6,
+    "taux_detection": 1.0,
+    "bloquees": 6,
+    "type_correct_parmi_detectees": 0.3333,
+    "type_correct_parmi_toutes": 0.3333
+  },
+  "_episodes": {
+    "ACCOUNT_TAKEOVER": {
+      "episodes": 16,
+      "detectes": 16,
+      "taux_detection": 1.0,
+      "stoppes_des_la_1ere_operation": 1.0,
+      "type_correct_a_la_1ere_alerte": 1.0,
+      "operations_passees_avant_alerte_moy": 0.0,
+      "usd_passes_avant_alerte": 0,
+      "usd_total_episodes": 13176.13
+    },
+    "AGENT_FRAUD": {
+      "episodes": 22,
+      "detectes": 22,
+      "taux_detection": 1.0,
+      "stoppes_des_la_1ere_operation": 1.0,
+      "type_correct_a_la_1ere_alerte": 1.0,
+      "operations_passees_avant_alerte_moy": 0.0,
+      "usd_passes_avant_alerte": 0,
+      "usd_total_episodes": 15761.38
+    },
+    "CARD_TESTING": {
+      "episodes": 1,
+      "detectes": 1,
+      "taux_detection": 1.0,
+      "stoppes_des_la_1ere_operation": 1.0,
+      "type_correct_a_la_1ere_alerte": 1.0,
+      "operations_passees_avant_alerte_moy": 0.0,
+      "usd_passes_avant_alerte": 0,
+      "usd_total_episodes": 141.27
+    },
+    "CNP_FRAUD": {
+      "episodes": 8,
+      "detectes": 8,
+      "taux_detection": 1.0,
+      "stoppes_des_la_1ere_operation": 1.0,
+      "type_correct_a_la_1ere_alerte": 1.0,
+      "operations_passees_avant_alerte_moy": 0.0,
+      "usd_passes_avant_alerte": 0,
+      "usd_total_episodes": 1771.24
+    },
+    "SIM_SWAP": {
+      "episodes": 32,
+      "detectes": 32,
+      "taux_detection": 1.0,
+      "stoppes_des_la_1ere_operation": 1.0,
+      "type_correct_a_la_1ere_alerte": 0.8438,
+      "operations_passees_avant_alerte_moy": 0.0,
+      "usd_passes_avant_alerte": 0,
+      "usd_total_episodes": 31886.5
+    },
+    "SOCIAL_ENGINEERING": {
+      "episodes": 30,
+      "detectes": 30,
+      "taux_detection": 1.0,
+      "stoppes_des_la_1ere_operation": 0.9667,
+      "type_correct_a_la_1ere_alerte": 1.0,
+      "operations_passees_avant_alerte_moy": 0.03,
+      "usd_passes_avant_alerte": 40.71,
+      "usd_total_episodes": 3987.79
+    },
+    "TOPUP_DRAIN": {
+      "episodes": 2,
+      "detectes": 2,
+      "taux_detection": 1.0,
+      "stoppes_des_la_1ere_operation": 1.0,
+      "type_correct_a_la_1ere_alerte": 1.0,
+      "operations_passees_avant_alerte_moy": 0.0,
+      "usd_passes_avant_alerte": 0,
+      "usd_total_episodes": 467.86
+    }
+  },
+  "_meta": {
+    "transactions": 19165,
+    "cadence_par_s": 15.0,
+    "latence_p50_ms": 59.49,
+    "latence_p95_ms": 104.41,
+    "latence_p99_ms": 299.23
+  }
+}

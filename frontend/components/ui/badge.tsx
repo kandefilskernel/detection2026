@@ -1,23 +1,39 @@
-import { cn, ACTION_LABEL, RISK_LABEL, STATUS_LABEL } from "@/lib/utils";
+import { cn, ACTION_LABEL, FRAUD_TYPE_HELP, FRAUD_TYPE_LABEL, RISK_LABEL, STATUS_LABEL } from "@/lib/utils";
 
-const RISK_STYLE: Record<string, string> = {
-  CRITIQUE: "bg-risk-critique/12 text-risk-critique ring-risk-critique/30",
-  ELEVE: "bg-risk-eleve/12 text-risk-eleve ring-risk-eleve/30",
-  MOYEN: "bg-risk-moyen/15 text-[hsl(38_90%_32%)] ring-risk-moyen/35",
-  FAIBLE: "bg-risk-faible/12 text-risk-faible ring-risk-faible/30",
+const TONE = {
+  critique: "bg-risk-critique/10 text-risk-critique ring-risk-critique/25 [--dot:hsl(var(--risk-critique))]",
+  eleve: "bg-risk-eleve/10 text-risk-eleve ring-risk-eleve/25 [--dot:hsl(var(--risk-eleve))]",
+  moyen: "bg-risk-moyen/12 text-warn ring-risk-moyen/30 [--dot:hsl(var(--risk-moyen))]",
+  faible: "bg-risk-faible/10 text-risk-faible ring-risk-faible/25 [--dot:hsl(var(--risk-faible))]",
+  primary: "bg-primary/10 text-primary ring-primary/25 [--dot:hsl(var(--primary))]",
+  neutral: "bg-muted text-muted-foreground ring-border [--dot:hsl(var(--muted-foreground))]",
 };
-const ACTION_STYLE: Record<string, string> = {
-  BLOCK: RISK_STYLE.CRITIQUE, VERIFY: RISK_STYLE.MOYEN, APPROVE: RISK_STYLE.FAIBLE,
-};
-const STATUS_STYLE: Record<string, string> = {
-  OUVERT: "bg-primary/10 text-primary ring-primary/30", EN_COURS: RISK_STYLE.MOYEN,
-  FRAUDE_CONFIRMEE: RISK_STYLE.CRITIQUE, FAUX_POSITIF: "bg-muted text-muted-foreground ring-border",
+const RISK_TONE: Record<string, keyof typeof TONE> = { CRITIQUE: "critique", ELEVE: "eleve", MOYEN: "moyen", FAIBLE: "faible" };
+const ACTION_TONE: Record<string, keyof typeof TONE> = { BLOCK: "critique", VERIFY: "moyen", APPROVE: "faible" };
+const STATUS_TONE: Record<string, keyof typeof TONE> = {
+  OUVERT: "primary", EN_COURS: "moyen", FRAUDE_CONFIRMEE: "critique", FAUX_POSITIF: "neutral",
 };
 
-function Pill({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <span className={cn("inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset", className)}>{children}</span>;
+export function Pill({ tone = "neutral", dot = true, className, children }:
+  { tone?: keyof typeof TONE; dot?: boolean; className?: string; children: React.ReactNode }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset",
+      TONE[tone], className)}>
+      {dot && <span className="h-1.5 w-1.5 rounded-full bg-[var(--dot)]" />}
+      {children}
+    </span>
+  );
 }
-export const RiskBadge = ({ level }: { level: string }) => <Pill className={RISK_STYLE[level]}>{RISK_LABEL[level] ?? level}</Pill>;
-export const ActionBadge = ({ action }: { action: string }) => <Pill className={ACTION_STYLE[action]}>{ACTION_LABEL[action] ?? action}</Pill>;
-export const StatusBadge = ({ status }: { status: string }) => <Pill className={STATUS_STYLE[status]}>{STATUS_LABEL[status] ?? status}</Pill>;
-export const Tag = ({ children }: { children: React.ReactNode }) => <Pill className="bg-muted text-muted-foreground ring-border">{children}</Pill>;
+export const RiskBadge = ({ level }: { level: string }) => <Pill tone={RISK_TONE[level]}>{RISK_LABEL[level] ?? level}</Pill>;
+export const ActionBadge = ({ action }: { action: string }) => <Pill tone={ACTION_TONE[action]}>{ACTION_LABEL[action] ?? action}</Pill>;
+export const StatusBadge = ({ status }: { status: string }) => <Pill tone={STATUS_TONE[status]}>{STATUS_LABEL[status] ?? status}</Pill>;
+/** Typologie de fraude probable ; rien n'est affiché si la transaction n'est pas signalée. */
+export const FraudTypeBadge = ({ type, probability }: { type?: string | null; probability?: number | null }) =>
+  type ? (
+    <span title={FRAUD_TYPE_HELP[type]}>
+      <Pill tone="primary" dot={false}>
+        {FRAUD_TYPE_LABEL[type] ?? type}{probability != null && <span className="font-normal opacity-70">{Math.round(probability * 100)} %</span>}
+      </Pill>
+    </span>
+  ) : null;
+export const Tag = ({ children }: { children: React.ReactNode }) => <Pill dot={false}>{children}</Pill>;

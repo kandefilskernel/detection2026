@@ -60,7 +60,8 @@ class DecisionPolicy:
             "BLOCK": (1 - p) * (c.false_block_usd + c.false_block_amount_share * amount_usd),
         }
 
-    def decide(self, p: float, amount_usd: float, channel: str, feats: dict, tx: dict) -> dict:
+    def decide(self, p: float, amount_usd: float, channel: str, feats: dict, tx: dict,
+               text: dict | None = None, physics: dict | None = None) -> dict:
         costs = self.expected_costs(p, amount_usd, channel)
         if p >= self.block_floor:
             action, reason = "BLOCK", "probabilité de fraude très élevée"
@@ -70,7 +71,7 @@ class DecisionPolicy:
             action = min(costs, key=costs.get)
             reason = "coût attendu minimal"
 
-        rules = regulatory_rules(feats, tx)
+        rules = regulatory_rules(feats, tx, text, physics)
         for rule in rules:
             if ACTION_RANK[rule["min_action"]] > ACTION_RANK[action]:
                 action, reason = rule["min_action"], f"règle : {rule['id']}"
@@ -83,7 +84,7 @@ class DecisionPolicy:
         }
 
 
-def regulatory_rules(feats: dict, tx: dict) -> list[dict]:
+def regulatory_rules(feats: dict, tx: dict, text: dict | None = None, physics: dict | None = None) -> list[dict]:
     """Règles métier explicites, prioritaires sur le modèle (conformité et bon sens terrain).
     Elles ne peuvent que RENFORCER la décision, jamais l'assouplir."""
     rules = []
@@ -94,4 +95,12 @@ def regulatory_rules(feats: dict, tx: dict) -> list[dict]:
         rules.append({"id": "DEPASSEMENT_PLAFOND_KYC", "min_action": "VERIFY"})
     if tx["tx_type"] == "CASH_OUT" and feats["is_new_device"] and feats["is_new_province"]:
         rules.append({"id": "CASH_OUT_APPAREIL_ET_PROVINCE_INHABITUELS", "min_action": "VERIFY"})
+    # Le texte seul ne justifie jamais un blocage (lexique, pas de certitude) : il impose une confirmation
+    # du client quand le message du transfert ressemble fortement à une manipulation.
+    if debit and text and text["social_engineering"]["level"] == "ELEVE":
+        rules.append({"id": "TEXTE_INGENIERIE_SOCIALE", "min_action": "VERIFY"})
+    # Loi physique de cinématique (modèle par les lois physiques) : un client ne peut pas être là où il ne peut
+    # physiquement pas être. Fournie seulement en mode « enforce » ; ne peut que renforcer la décision.
+    if physics and "CINEMATIQUE" in physics["violated"] and physics["severe"]:
+        rules.append({"id": "LOI_PHYSIQUE_CINEMATIQUE", "min_action": "VERIFY"})
     return rules

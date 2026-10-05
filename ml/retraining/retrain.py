@@ -44,6 +44,7 @@ from ml.models.lstm_attention_branch import train_lstm_branch
 from ml.models.meta_learner import build_meta_learner, meta_coefficients
 from ml.models.xgboost_branch import train_xgboost_branch
 from ml.preprocessing.train_test_split_normalize import build_sequence_index
+from ml.training.diagnostics import summarize_training
 from ml.training.evaluation import best_f1_threshold, evaluate
 
 ARTIFACTS = Path(os.getenv("ARTIFACTS_DIR", "ml/artifacts"))
@@ -105,7 +106,7 @@ def train_challenger(table: pd.DataFrame, seed: int = 42, quick: bool = False):
     log(f"lignes : " + ", ".join(f"{k}={len(v):,}" for k, v in idx.items()))
 
     xgb_m = train_xgboost_branch(X[idx["fit"]], y[idx["fit"]], X[idx["early_stop"]], y[idx["early_stop"]],
-                                 200 if quick else 600, seed)
+                                 200 if quick else 600, seed, record_curves=True)
     fit, es = idx["fit"], idx["early_stop"]
     ae = train_autoencoder_branch(X[fit][y[fit] == 0], X[es][y[es] == 0], epochs=3 if quick else 30,
                                   seed=seed, log=lambda m: None)
@@ -121,7 +122,10 @@ def train_challenger(table: pd.DataFrame, seed: int = 42, quick: bool = False):
                                                             replace=False))
     drift_ref = {"features": table.loc[ref_rows, FEATURE_NAMES].to_numpy(np.float32),
                  "scores": ens.predict_proba(X, seq, val_sample).astype(np.float32),
+                 # erreur de reconstruction de l'autoencodeur : référence de la détection de nouveauté
+                 "ae_scores": ens.branch_scores(X, seq, val_sample)[:, 2].astype(np.float32),
                  "feature_names": np.array(FEATURE_NAMES)}
+    ens.diagnostics = summarize_training(xgb_m, lstm, ae)
     return ens, table.iloc[idx["eval"]].reset_index(drop=True), p_eval, drift_ref, prep
 
 
@@ -144,13 +148,22 @@ def run(engine, dry_run: bool = False, quick: bool = False, force: bool = False)
     log(f"évaluation ({len(ev):,} tx, {int(y_ev.sum())} fraudes) : champion PR-AUC={m_champ['pr_auc']} "
         f"rappel={m_champ['recall']} | challenger PR-AUC={m_chal['pr_auc']} rappel={m_chal['recall']}")
 
-    better = (m_chal["pr_auc"] >= m_champ["pr_auc"] + 0.002 and m_chal["recall"] >= m_champ["recall"] - 0.01)
+    diag = ens.diagnostics
+    log("courbes d'apprentissage : " + ", ".join(f"{k}={v['verdict']} (écart {v['generalization_gap']:.0%})"
+                                                for k, v in diag.items() if isinstance(v, dict) and "verdict" in v))
+    better_metrics = (m_chal["pr_auc"] >= m_champ["pr_auc"] + 0.002 and m_chal["recall"] >= m_champ["recall"] - 0.01)
+    # un modèle qui a appris par cœur ses données (perte de validation >> perte d'entraînement) n'est jamais promu
+    better = better_metrics and not diag["overfit_net"]
+    blocked = "surapprentissage net : " + ", ".join(k for k, v in diag.items() if isinstance(v, dict)
+                                                    and v.get("verdict") == "SURAPPRENTISSAGE_NET") if better_metrics and diag["overfit_net"] else None
     version = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
     status = "CHAMPION" if better and not dry_run else ("CHALLENGER" if better else "REJETE")
     cand = ARTIFACTS / "candidates" / version.replace(":", "-")
     ens.save(cand, {"trained_at": version, "retrained_from": champion_meta.get("trained_at"),
                     "evaluation": {"champion": m_champ, "challenger": m_chal, "n_eval": int(len(ev))},
-                    "training_rows": int((table["part"] != "eval").sum())})
+                    "training_rows": int((table["part"] != "eval").sum()),
+                    "diagnostics": {k: (v["verdict"] if isinstance(v, dict) else v) for k, v in diag.items()}})
+    (cand / "training_diagnostics.json").write_text(json.dumps(diag, indent=2, ensure_ascii=False), encoding="utf-8")
     for f in ("scaler.pkl", "feature_names.json", "preprocessing.json", "class_weights.json"):
         if (ARTIFACTS / f).exists():
             shutil.copy2(ARTIFACTS / f, cand / f)
@@ -160,6 +173,8 @@ def run(engine, dry_run: bool = False, quick: bool = False, force: bool = False)
         promote(cand)
     report = {"status": status, "version": version, "champion": m_champ, "challenger": m_chal,
               "n_labeled_production": n_lab, "n_frauds_production": n_fraud,
+              "diagnostics": {k: (v["verdict"] if isinstance(v, dict) else v) for k, v in diag.items()},
+              **({"reason": blocked} if blocked else {}),
               "duration_s": round(time.perf_counter() - t0, 1), "candidate_dir": str(cand)}
     register(engine, version, status, report)
     log(f"décision : {status} ({report['duration_s']} s)")
@@ -194,7 +209,8 @@ def register(engine, version: str, status: str, report: dict) -> None:
         c.execute(text("INSERT INTO model_registry (version, status, metrics, trained_on) "
                        "VALUES (:v, :s, CAST(:m AS JSONB), CAST(:t AS JSONB))"),
                   {"v": version, "s": status,
-                   "m": json.dumps({"champion": report["champion"], "challenger": report["challenger"]}),
+                   "m": json.dumps({"champion": report["champion"], "challenger": report["challenger"],
+                                    "diagnostics": report.get("diagnostics")}),
                    "t": json.dumps({"n_labeled_production": report["n_labeled_production"],
                                     "n_frauds_production": report["n_frauds_production"]})})
     uri = os.getenv("MLFLOW_TRACKING_URI")

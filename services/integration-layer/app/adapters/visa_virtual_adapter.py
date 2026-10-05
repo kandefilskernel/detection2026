@@ -24,12 +24,14 @@ class VisaVirtualAdapter(BaseAdapter):
             raise AdapterError(f"currency_code inconnu : {p['currency_code']}")
         amount = int(p["amount_minor"]) / 100
         merchant = p.get("merchant") or {}
+        ts = self.parse_time(p["transmission_datetime"])
         return UnifiedTransaction(
-            transaction_id=p["stan"], timestamp=self.parse_time(p["transmission_datetime"]),
+            memo=self.memo(p),
+            transaction_id=p["stan"], timestamp=ts,
             user_id=p["cardholder_id"], card_id=p["card_id"], wallet_id=p.get("funding_wallet"),
             channel="VISA_VIRTUAL", operator=p.get("funding_operator"), tx_type=tx_type,
             access_channel=p.get("access_channel", "APP"), amount=amount, currency=currency,
-            amount_usd=self.to_usd(amount, currency),
+            amount_usd=self.to_usd(amount, currency, ts),
             balance_before_usd=float(p["available_balance_usd"]), status=p.get("response_status"),
             merchant_id=merchant.get("mid"), merchant_category=merchant.get("category"),
             merchant_country=merchant.get("country"),
@@ -39,6 +41,7 @@ class VisaVirtualAdapter(BaseAdapter):
 
     def from_unified(self, t: dict) -> dict:
         return {
+            "memo": t.get("memo"),
             "stan": t["transaction_id"], "transmission_datetime": t["timestamp"].isoformat(),
             "card_id": t.get("card_id"), "cardholder_id": t["user_id"],
             "funding_wallet": t.get("wallet_id"), "funding_operator": t.get("operator"),

@@ -21,7 +21,7 @@ from shared.utils.metrics import metrics_response
 from app import events
 from app.config import settings
 from app.db import SessionLocal, engine
-from app.routers import audit, auth, cases, reports, transactions
+from app.routers import audit, auth, cases, nlp, reports, retraining, transactions
 from shared.logging.logger_config import configure_logging
 
 configure_logging("backoffice-api")
@@ -41,7 +41,7 @@ app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in settings.CO
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 Instrumentator(excluded_handlers=["/metrics", "/health"]).instrument(app)
 
-for r in (auth.router, transactions.router, cases.router, reports.router, audit.router):
+for r in (auth.router, transactions.router, cases.router, reports.router, audit.router, nlp.router, retraining.router):
     app.include_router(r)
 
 

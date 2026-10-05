@@ -34,3 +34,6 @@ frontend/*.tsbuildinfo
 scripts/load/payloads.json
 
 mlflow.db
+ml/artifacts/candidates/
+ml/artifacts/archive/
+ml/data/raw_*/

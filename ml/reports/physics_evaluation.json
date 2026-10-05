@@ -1,0 +1,139 @@
+{
+  "n": 631968,
+  "n_test": 183240,
+  "split_bounds": {
+    "start": "2019-01-01 00:25:59",
+    "early_stop_from": "2023-03-02 09:59:20.820000",
+    "val_from": "2023-11-25 21:33:28.200000",
+    "test_from": "2024-12-13 10:39:21.600000",
+    "end": "2025-12-31 23:45:15"
+  },
+  "A_violations": {
+    "cinematique_severe": {
+      "legitimes": 75,
+      "part_des_legitimes": 0.00012,
+      "fraudes": 88,
+      "part_des_fraudes": 0.01044,
+      "precision": 0.5399
+    },
+    "conservation": {
+      "legitimes": 5710,
+      "fraudes": 500,
+      "precision": 0.0805
+    },
+    "taux_de_fraude_global": 0.01333,
+    "par_type_de_fraude": {
+      "ACCOUNT_TAKEOVER": 0.0144,
+      "AGENT_FRAUD": 0.0462,
+      "CARD_TESTING": 0.0028,
+      "CNP_FRAUD": 0.0049,
+      "SIM_SWAP": 0.0081,
+      "SMURFING": 0.0015,
+      "SOCIAL_ENGINEERING": 0.0027,
+      "TOPUP_DRAIN": 0.0118
+    }
+  },
+  "B_valeur_ajoutee_comme_variables": {
+    "donnees": {
+      "pr_auc": {
+        "point": 0.9886,
+        "ci95": [
+          0.9848,
+          0.9911
+        ]
+      },
+      "recall_at_1pct_fpr": {
+        "point": 1.0,
+        "ci95": [
+          0.9996,
+          1.0
+        ]
+      }
+    },
+    "donnees+physique": {
+      "pr_auc": {
+        "point": 0.9887,
+        "ci95": [
+          0.985,
+          0.9914
+        ],
+        "diff_vs_reference": 0.0001,
+        "diff_ci95": [
+          -0.0003,
+          0.0007
+        ],
+        "diff_p_value": 0.5533,
+        "significant_95": false
+      },
+      "recall_at_1pct_fpr": {
+        "point": 0.9996,
+        "ci95": [
+          0.9987,
+          1.0
+        ],
+        "diff_vs_reference": -0.0004,
+        "diff_ci95": [
+          -0.0013,
+          0.0004
+        ],
+        "diff_p_value": 0.8267,
+        "significant_95": false
+      }
+    }
+  },
+  "B_variance_graines": {
+    "donnees": {
+      "pr_auc": [
+        0.9886,
+        0.9887,
+        0.9883,
+        0.9888,
+        0.9895
+      ],
+      "moyenne": 0.9888,
+      "ecart_type": 0.0004
+    },
+    "donnees+physique": {
+      "pr_auc": [
+        0.9887,
+        0.989,
+        0.9891,
+        0.9886,
+        0.9891
+      ],
+      "moyenne": 0.9889,
+      "ecart_type": 0.0002
+    }
+  },
+  "C_cout_enforce": {
+    "legitimes_soumises_a_verification": 0.00013,
+    "fraudes_deja_alertees_par_la_physique": 0.01067
+  },
+  "D_attaque_session_relayee": {
+    "n_attaques": 300,
+    "distance_moyenne_km": 1568.0,
+    "ecart_moyen_min": 3.0,
+    "rappel": {
+      "modele_de_donnees (seuil F1)": 0.0033,
+      "modele_de_donnees (seuil 1 % de faux positifs)": 0.07,
+      "physique_seule": 1.0,
+      "hybride (donnees OU physique)": 1.0
+    },
+    "fausses_alertes_sur_les_vraies_operations_legitimes": {
+      "modele_de_donnees (seuil F1)": 0.00116,
+      "physique_seule": 0.00013,
+      "hybride": 0.00128
+    },
+    "rappel_ic95": {
+      "modele_de_donnees": [
+        0.0,
+        0.01
+      ],
+      "hybride": [
+        1.0,
+        1.0
+      ]
+    }
+  },
+  "duree_s": 1057
+}
