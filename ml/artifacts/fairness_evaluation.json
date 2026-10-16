@@ -1,0 +1,1503 @@
+{
+  "n": 183240,
+  "ratio_rule": 1.25,
+  "min_legit": 200,
+  "decision": {
+    "intercept": {
+      "overall": {
+        "n": 183240,
+        "n_legit": 180803,
+        "n_fraud": 2437,
+        "false_alert_rate": 0.005790833116707134,
+        "false_alert_ci": [
+          0.005451425718827679,
+          0.006151241422723672
+        ],
+        "recall": 0.9991793188346327,
+        "recall_ci": [
+          0.9970124221359243,
+          0.9997749154774628
+        ],
+        "precision": 0.699310740953475
+      },
+      "dimensions": {
+        "province": {
+          "label": "Province",
+          "groups": [
+            {
+              "group": "Kasai-Oriental",
+              "n": 9731,
+              "n_legit": 9596,
+              "n_fraud": 135,
+              "false_alert_rate": 0.007815756565235515,
+              "false_alert_ci": [
+                0.006240145461908071,
+                0.009785285624371521
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9723310592790634,
+                1.0
+              ],
+              "precision": 0.6428571428571429,
+              "false_alert_ratio": 1.349677396622996,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "Ituri",
+              "n": 6786,
+              "n_legit": 6690,
+              "n_fraud": 96,
+              "false_alert_rate": 0.007772795216741405,
+              "false_alert_ci": [
+                0.005932564886432776,
+                0.010178004565942676
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9615230525151842,
+                1.0
+              ],
+              "precision": 0.6486486486486487,
+              "false_alert_ratio": 1.342258542094075,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "Kongo-Central",
+              "n": 9553,
+              "n_legit": 9398,
+              "n_fraud": 155,
+              "false_alert_rate": 0.007448393275164928,
+              "false_alert_ci": [
+                0.005900005937953,
+                0.0093992945735553
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9758148998750957,
+                1.0
+              ],
+              "precision": 0.6888888888888889,
+              "false_alert_ratio": 1.2862386335526692,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "Tshopo",
+              "n": 4723,
+              "n_legit": 4664,
+              "n_fraud": 59,
+              "false_alert_rate": 0.006432246998284734,
+              "false_alert_ci": [
+                0.004509363352552831,
+                0.009167536052088492
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.938868520215908,
+                1.0
+              ],
+              "precision": 0.6629213483146067,
+              "false_alert_ratio": 1.1107636619206065,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Kinshasa",
+              "n": 70171,
+              "n_legit": 69209,
+              "n_fraud": 962,
+              "false_alert_rate": 0.005822942102905691,
+              "false_alert_ci": [
+                0.005282860769452215,
+                0.00641788119228224
+              ],
+              "recall": 0.997920997920998,
+              "recall_ci": [
+                0.9924513810388952,
+                0.9994296893146702
+              ],
+              "precision": 0.7043286867204696,
+              "false_alert_ratio": 1.0055447956367314,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Lualaba",
+              "n": 12756,
+              "n_legit": 12619,
+              "n_fraud": 137,
+              "false_alert_rate": 0.005547190744116016,
+              "false_alert_ci": [
+                0.004393257124044999,
+                0.007002085110147341
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9727239679185695,
+                1.0
+              ],
+              "precision": 0.6618357487922706,
+              "false_alert_ratio": 0.9579261968561682,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Sud-Kivu",
+              "n": 13687,
+              "n_legit": 13473,
+              "n_fraud": 214,
+              "false_alert_rate": 0.005269798856973206,
+              "false_alert_ci": [
+                0.004180319497434388,
+                0.0066413258352524636
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9823651680854346,
+                1.0
+              ],
+              "precision": 0.7508771929824561,
+              "false_alert_ratio": 0.9100243006087169,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Haut-Katanga",
+              "n": 29695,
+              "n_legit": 29371,
+              "n_fraud": 324,
+              "false_alert_rate": 0.005038984031868169,
+              "false_alert_ci": [
+                0.004291396331752019,
+                0.005916032327199455
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9882821460119766,
+                1.0
+              ],
+              "precision": 0.6864406779661016,
+              "false_alert_ratio": 0.8701656446168679,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Nord-Kivu",
+              "n": 26138,
+              "n_legit": 25783,
+              "n_fraud": 355,
+              "false_alert_rate": 0.004964511499825466,
+              "false_alert_ci": [
+                0.0041772390796508616,
+                0.005899279946238685
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9892944407783268,
+                1.0
+              ],
+              "precision": 0.7349896480331263,
+              "false_alert_ratio": 0.8573052270324201,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 1.5743254025114632,
+          "n_flagged": 3
+        },
+        "operator": {
+          "label": "Opérateur",
+          "groups": [
+            {
+              "group": "ORANGE",
+              "n": 40787,
+              "n_legit": 40288,
+              "n_fraud": 499,
+              "false_alert_rate": 0.006180500397140588,
+              "false_alert_ci": [
+                0.00546086910734089,
+                0.006994297498893362
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9923602184067507,
+                0.9999999999999999
+              ],
+              "precision": 0.6671122994652406,
+              "false_alert_ratio": 1.0672903660976216,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "VODACOM",
+              "n": 90501,
+              "n_legit": 89307,
+              "n_fraud": 1194,
+              "false_alert_rate": 0.005800217228212794,
+              "false_alert_ci": [
+                0.005322982665928497,
+                0.006319966626355408
+              ],
+              "recall": 0.9991624790619765,
+              "recall_ci": [
+                0.9952710828224283,
+                0.999852145490898
+              ],
+              "precision": 0.6972530683810637,
+              "false_alert_ratio": 1.001620511473312,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "AIRTEL",
+              "n": 51952,
+              "n_legit": 51208,
+              "n_fraud": 744,
+              "false_alert_rate": 0.005467895641306046,
+              "false_alert_ci": [
+                0.004865225594800517,
+                0.006144759252141601
+              ],
+              "recall": 0.9986559139784946,
+              "recall_ci": [
+                0.9924260176751527,
+                0.9997627025030242
+              ],
+              "precision": 0.7262952101661779,
+              "false_alert_ratio": 0.9442329853247918,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 1.1303252297741972,
+          "n_flagged": 0
+        },
+        "channel": {
+          "label": "Canal",
+          "groups": [
+            {
+              "group": "MOBILE_MONEY",
+              "n": 172648,
+              "n_legit": 170505,
+              "n_fraud": 2143,
+              "false_alert_rate": 0.0061405823876132665,
+              "false_alert_ci": [
+                0.005780733573233431,
+                0.006522684714724723
+              ],
+              "recall": 0.999066728884741,
+              "recall_ci": [
+                0.9966033469637283,
+                0.9997440314362431
+              ],
+              "precision": 0.6715809284818067,
+              "false_alert_ratio": 1.0603970558048152,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "VISA_VIRTUAL",
+              "n": 10592,
+              "n_legit": 10298,
+              "n_fraud": 294,
+              "false_alert_rate": 0.0,
+              "false_alert_ci": [
+                0.0,
+                0.0003729041999636259
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9871018689128719,
+                1.0
+              ],
+              "precision": 1.0,
+              "false_alert_ratio": 0.0,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": null,
+          "n_flagged": 0
+        },
+        "access_channel": {
+          "label": "Canal d'accès",
+          "groups": [
+            {
+              "group": "USSD",
+              "n": 70278,
+              "n_legit": 69494,
+              "n_fraud": 784,
+              "false_alert_rate": 0.008403603188764498,
+              "false_alert_ci": [
+                0.007751544401773926,
+                0.009110009468411302
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9951238929246693,
+                1.0
+              ],
+              "precision": 0.5730994152046783,
+              "false_alert_ratio": 1.4511907042389567,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "APP",
+              "n": 58626,
+              "n_legit": 57322,
+              "n_fraud": 1304,
+              "false_alert_rate": 0.007832943721433307,
+              "false_alert_ci": [
+                0.0071435070455330586,
+                0.008588343980619166
+              ],
+              "recall": 0.9984662576687117,
+              "recall_ci": [
+                0.9944248663392274,
+                0.9995793005262399
+              ],
+              "precision": 0.7435750999428897,
+              "false_alert_ratio": 1.3526453903212095,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "AGENT",
+              "n": 54336,
+              "n_legit": 53987,
+              "n_fraud": 349,
+              "false_alert_rate": 0.00025932168855465206,
+              "false_alert_ci": [
+                0.00015448359599213844,
+                0.00043527568644142155
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9891123949103505,
+                0.9999999999999999
+              ],
+              "precision": 0.9614325068870524,
+              "false_alert_ratio": 0.0447814128517161,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 32.40609466798778,
+          "n_flagged": 2
+        },
+        "device_type": {
+          "label": "Type de téléphone",
+          "groups": [
+            {
+              "group": "smartphone",
+              "n": 109827,
+              "n_legit": 108178,
+              "n_fraud": 1649,
+              "false_alert_rate": 0.0058607110503059775,
+              "false_alert_ci": [
+                0.005423059980772655,
+                0.006333456465883952
+              ],
+              "recall": 0.9987871437234688,
+              "recall_ci": [
+                0.9955883507323865,
+                0.9996673349909156
+              ],
+              "precision": 0.7220517316966243,
+              "false_alert_ratio": 1.012066991431205,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "feature_phone",
+              "n": 73413,
+              "n_legit": 72625,
+              "n_fraud": 788,
+              "false_alert_rate": 0.0056867469879518075,
+              "false_alert_ci": [
+                0.005165384511636402,
+                0.006260401467029131
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9951485246544257,
+                0.9999999999999999
+              ],
+              "precision": 0.6561199000832639,
+              "false_alert_ratio": 0.982025707414184,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 1.0305911380834663,
+          "n_flagged": 0
+        },
+        "kyc_level": {
+          "label": "Niveau KYC",
+          "groups": [
+            {
+              "group": "KYC 1",
+              "n": 62932,
+              "n_legit": 61919,
+              "n_fraud": 1013,
+              "false_alert_rate": 0.00726755923060773,
+              "false_alert_ci": [
+                0.0066284066525106305,
+                0.007967848568438402
+              ],
+              "recall": 0.9990128331688055,
+              "recall_ci": [
+                0.9944294283864556,
+                0.9998257240384647
+              ],
+              "precision": 0.6922024623803009,
+              "false_alert_ratio": 1.2550109948152526,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "KYC 3",
+              "n": 31422,
+              "n_legit": 31030,
+              "n_fraud": 392,
+              "false_alert_rate": 0.0056719303899452145,
+              "false_alert_ci": [
+                0.004895341687386896,
+                0.00657090231122912
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9902951079421666,
+                0.9999999999999999
+              ],
+              "precision": 0.6901408450704225,
+              "false_alert_ratio": 0.9794670776439969,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "KYC 2",
+              "n": 88886,
+              "n_legit": 87854,
+              "n_fraud": 1032,
+              "false_alert_rate": 0.004792041341316275,
+              "false_alert_ci": [
+                0.004356531803775564,
+                0.005270856993811288
+              ],
+              "recall": 0.999031007751938,
+              "recall_ci": [
+                0.9945315947182313,
+                0.999828932991797
+              ],
+              "precision": 0.7100550964187328,
+              "false_alert_ratio": 0.8275219203763196,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 1.5165894267121411,
+          "n_flagged": 1
+        },
+        "segment": {
+          "label": "Segment de clientèle",
+          "groups": [
+            {
+              "group": "agriculteur",
+              "n": 6519,
+              "n_legit": 6358,
+              "n_fraud": 161,
+              "false_alert_rate": 0.01085246932997798,
+              "false_alert_ci": [
+                0.008584758628093981,
+                0.01371092380448969
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9766952031526023,
+                1.0
+              ],
+              "precision": 0.7,
+              "false_alert_ratio": 1.8740773756141442,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "etudiant",
+              "n": 17732,
+              "n_legit": 17383,
+              "n_fraud": 349,
+              "false_alert_rate": 0.008801702813093252,
+              "false_alert_ci": [
+                0.007517613838924906,
+                0.010302851034925445
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9891123949103505,
+                0.9999999999999999
+              ],
+              "precision": 0.6952191235059761,
+              "false_alert_ratio": 1.5199372241792735,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "informel",
+              "n": 39732,
+              "n_legit": 39077,
+              "n_fraud": 655,
+              "false_alert_rate": 0.006960616219259411,
+              "false_alert_ci": [
+                0.0061833656324030055,
+                0.007834797169904711
+              ],
+              "recall": 0.9984732824427481,
+              "recall_ci": [
+                0.991403075967987,
+                0.9997304529409341
+              ],
+              "precision": 0.7062634989200864,
+              "false_alert_ratio": 1.2020060117390252,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "salarie",
+              "n": 37964,
+              "n_legit": 37403,
+              "n_fraud": 561,
+              "false_alert_rate": 0.006844370772397936,
+              "false_alert_ci": [
+                0.006057964882777578,
+                0.00773206864948407
+              ],
+              "recall": 0.9982174688057041,
+              "recall_ci": [
+                0.9899727072909577,
+                0.9996852782398529
+              ],
+              "precision": 0.6862745098039216,
+              "false_alert_ratio": 1.1819319663437098,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "diaspora_beneficiaire",
+              "n": 12388,
+              "n_legit": 12119,
+              "n_fraud": 269,
+              "false_alert_rate": 0.0057760541298787025,
+              "false_alert_ci": [
+                0.004574608793185777,
+                0.0072907281258415245
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9859200356543868,
+                0.9999999999999999
+              ],
+              "precision": 0.7935103244837758,
+              "false_alert_ratio": 0.9974478651809543,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "commercant",
+              "n": 68905,
+              "n_legit": 68463,
+              "n_fraud": 442,
+              "false_alert_rate": 0.0033156595533353783,
+              "false_alert_ci": [
+                0.002912021470297879,
+                0.003775034472414103
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9913834868706736,
+                1.0
+              ],
+              "precision": 0.6606875934230194,
+              "false_alert_ratio": 0.5725703860761189,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 3.273095188274372,
+          "n_flagged": 2
+        },
+        "income_band": {
+          "label": "Tranche de revenu",
+          "groups": [
+            {
+              "group": "Q1 (plus modestes)",
+              "n": 46701,
+              "n_legit": 45823,
+              "n_fraud": 878,
+              "false_alert_rate": 0.008423717347183729,
+              "false_alert_ci": [
+                0.007627131876607619,
+                0.009302719121458983
+              ],
+              "recall": 0.9988610478359908,
+              "recall_ci": [
+                0.99357675722633,
+                0.9997989238483663
+              ],
+              "precision": 0.6943784639746635,
+              "false_alert_ratio": 1.4546641523618526,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "Q2",
+              "n": 45353,
+              "n_legit": 44709,
+              "n_fraud": 644,
+              "false_alert_rate": 0.005904851372206938,
+              "false_alert_ci": [
+                0.005235871369908814,
+                0.006658733870300298
+              ],
+              "recall": 0.9984472049689441,
+              "recall_ci": [
+                0.9912571330325372,
+                0.9997258479924543
+              ],
+              "precision": 0.7089305402425579,
+              "false_alert_ratio": 1.019689439015407,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Q3",
+              "n": 45598,
+              "n_legit": 45119,
+              "n_fraud": 479,
+              "false_alert_rate": 0.005119794321682662,
+              "false_alert_ci": [
+                0.004502059428704156,
+                0.005821793934289723
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9920437675626956,
+                1.0
+              ],
+              "precision": 0.6746478873239437,
+              "false_alert_ratio": 0.884120508828262,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Q4 (plus aisés)",
+              "n": 45588,
+              "n_legit": 45152,
+              "n_fraud": 436,
+              "false_alert_rate": 0.003676470588235294,
+              "false_alert_ci": [
+                0.0031588681652486216,
+                0.0042785217293957074
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.991265946649885,
+                1.0
+              ],
+              "precision": 0.7242524916943521,
+              "false_alert_ratio": 0.6348776616663858,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 2.291251118433974,
+          "n_flagged": 1
+        }
+      }
+    },
+    "alert": {
+      "overall": {
+        "n": 183240,
+        "n_legit": 180803,
+        "n_fraud": 2437,
+        "false_alert_rate": 0.0006747675646974885,
+        "false_alert_ci": [
+          0.0005652116017978283,
+          0.0008055418376560913
+        ],
+        "recall": 0.9778416085350842,
+        "recall_ci": [
+          0.971201625072402,
+          0.9829774580766235
+        ],
+        "precision": 0.9512974051896208
+      },
+      "dimensions": {
+        "province": {
+          "label": "Province",
+          "groups": [
+            {
+              "group": "Ituri",
+              "n": 6786,
+              "n_legit": 6690,
+              "n_fraud": 96,
+              "false_alert_rate": 0.001195814648729447,
+              "false_alert_ci": [
+                0.0006060620044524414,
+                0.0023580953786562354
+              ],
+              "recall": 0.9895833333333334,
+              "recall_ci": [
+                0.9433324450728878,
+                0.9981588771815634
+              ],
+              "precision": 0.9223300970873787,
+              "false_alert_ratio": 1.7721875076576246,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Kongo-Central",
+              "n": 9553,
+              "n_legit": 9398,
+              "n_fraud": 155,
+              "false_alert_rate": 0.0009576505639497765,
+              "false_alert_ci": [
+                0.0005039115976181076,
+                0.0018192077367897392
+              ],
+              "recall": 0.9741935483870968,
+              "recall_ci": [
+                0.9355304684162196,
+                0.9899197914653228
+              ],
+              "precision": 0.94375,
+              "false_alert_ratio": 1.4192302861787822,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Tshopo",
+              "n": 4723,
+              "n_legit": 4664,
+              "n_fraud": 59,
+              "false_alert_rate": 0.0008576329331046312,
+              "false_alert_ci": [
+                0.0003335602641782716,
+                0.0022032867445119977
+              ],
+              "recall": 0.9830508474576272,
+              "recall_ci": [
+                0.9100406253761469,
+                0.9970018433070186
+              ],
+              "precision": 0.9354838709677419,
+              "false_alert_ratio": 1.2710049770829233,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Lualaba",
+              "n": 12756,
+              "n_legit": 12619,
+              "n_fraud": 137,
+              "false_alert_rate": 0.0007924558205880022,
+              "false_alert_ci": [
+                0.0004305110840340699,
+                0.0014582553883266385
+              ],
+              "recall": 0.9927007299270073,
+              "recall_ci": [
+                0.9598132493989078,
+                0.9987103686230405
+              ],
+              "precision": 0.9315068493150684,
+              "false_alert_ratio": 1.1744130305719063,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Haut-Katanga",
+              "n": 29695,
+              "n_legit": 29371,
+              "n_fraud": 324,
+              "false_alert_rate": 0.0006809437880902932,
+              "false_alert_ci": [
+                0.0004408650122615023,
+                0.0010516230357421334
+              ],
+              "recall": 0.9691358024691358,
+              "recall_ci": [
+                0.9441264985714146,
+                0.9831505766990818
+              ],
+              "precision": 0.9401197604790419,
+              "false_alert_ratio": 1.0091531124433546,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Kinshasa",
+              "n": 70171,
+              "n_legit": 69209,
+              "n_fraud": 962,
+              "false_alert_rate": 0.0006502044531780549,
+              "false_alert_ci": [
+                0.00048599921434061837,
+                0.00086984166476006
+              ],
+              "recall": 0.9771309771309772,
+              "recall_ci": [
+                0.9656164464301427,
+                0.9848499654535452
+              ],
+              "precision": 0.9543147208121827,
+              "false_alert_ratio": 0.9635976700651792,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Kasai-Oriental",
+              "n": 9731,
+              "n_legit": 9596,
+              "n_fraud": 135,
+              "false_alert_rate": 0.0006252605252188412,
+              "false_alert_ci": [
+                0.00028658910506122954,
+                0.0013636047898047021
+              ],
+              "recall": 0.9703703703703703,
+              "recall_ci": [
+                0.9262927103040972,
+                0.988418730647318
+              ],
+              "precision": 0.9562043795620438,
+              "false_alert_ratio": 0.9266309732880502,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Nord-Kivu",
+              "n": 26138,
+              "n_legit": 25783,
+              "n_fraud": 355,
+              "false_alert_rate": 0.0006205639374781833,
+              "false_alert_ci": [
+                0.0003820279356107818,
+                0.001007890246536814
+              ],
+              "recall": 0.9774647887323944,
+              "recall_ci": [
+                0.9561686052401667,
+                0.9885379170805454
+              ],
+              "precision": 0.9559228650137741,
+              "false_alert_ratio": 0.9196706687530161,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Sud-Kivu",
+              "n": 13687,
+              "n_legit": 13473,
+              "n_fraud": 214,
+              "false_alert_rate": 0.0002968900764491947,
+              "false_alert_ci": [
+                0.00011545875153827549,
+                0.0007632040948069691
+              ],
+              "recall": 0.985981308411215,
+              "recall_ci": [
+                0.959601002685578,
+                0.9952212167619473
+              ],
+              "precision": 0.9813953488372092,
+              "false_alert_ratio": 0.4399886597724897,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 4.02780269058296,
+          "n_flagged": 0
+        },
+        "operator": {
+          "label": "Opérateur",
+          "groups": [
+            {
+              "group": "VODACOM",
+              "n": 90501,
+              "n_legit": 89307,
+              "n_fraud": 1194,
+              "false_alert_rate": 0.0007390238167220935,
+              "false_alert_ci": [
+                0.0005809831369587786,
+                0.0009400147348158392
+              ],
+              "recall": 0.981574539363484,
+              "recall_ci": [
+                0.9722590526749816,
+                0.9878011088689153
+              ],
+              "precision": 0.9466882067851373,
+              "false_alert_ratio": 1.0952272388098743,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "AIRTEL",
+              "n": 51952,
+              "n_legit": 51208,
+              "n_fraud": 744,
+              "false_alert_rate": 0.0006639587564443056,
+              "false_alert_ci": [
+                0.0004751945385963883,
+                0.0009276372627110656
+              ],
+              "recall": 0.9771505376344086,
+              "recall_ci": [
+                0.9637130263142636,
+                0.9856858838292749
+              ],
+              "precision": 0.9553219448094612,
+              "false_alert_ratio": 0.983981434765572,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "ORANGE",
+              "n": 40787,
+              "n_legit": 40288,
+              "n_fraud": 499,
+              "false_alert_rate": 0.0005460683081810961,
+              "false_alert_ci": [
+                0.0003606567105647382,
+                0.0008267201404352916
+              ],
+              "recall": 0.969939879759519,
+              "recall_ci": [
+                0.9509990986269812,
+                0.9817001848054157
+              ],
+              "precision": 0.9565217391304348,
+              "false_alert_ratio": 0.8092687567546452,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 1.3533541603681682,
+          "n_flagged": 0
+        },
+        "channel": {
+          "label": "Canal",
+          "groups": [
+            {
+              "group": "MOBILE_MONEY",
+              "n": 172648,
+              "n_legit": 170505,
+              "n_fraud": 2143,
+              "false_alert_rate": 0.0007155215389578018,
+              "false_alert_ci": [
+                0.0005993505272966315,
+                0.000854190518870443
+              ],
+              "recall": 0.9748016798880075,
+              "recall_ci": [
+                0.9672680487045316,
+                0.9806360724006306
+              ],
+              "precision": 0.9448213478064225,
+              "false_alert_ratio": 1.060397055804815,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "VISA_VIRTUAL",
+              "n": 10592,
+              "n_legit": 10298,
+              "n_fraud": 294,
+              "false_alert_rate": 0.0,
+              "false_alert_ci": [
+                0.0,
+                0.0003729041999636259
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9871018689128719,
+                1.0
+              ],
+              "precision": 1.0,
+              "false_alert_ratio": 0.0,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": null,
+          "n_flagged": 0
+        },
+        "access_channel": {
+          "label": "Canal d'accès",
+          "groups": [
+            {
+              "group": "USSD",
+              "n": 70278,
+              "n_legit": 69494,
+              "n_fraud": 784,
+              "false_alert_rate": 0.00097850174115751,
+              "false_alert_ci": [
+                0.0007720001483497744,
+                0.0012401716944085766
+              ],
+              "recall": 0.9668367346938775,
+              "recall_ci": [
+                0.9518510760553158,
+                0.9772697015223091
+              ],
+              "precision": 0.9176755447941889,
+              "false_alert_ratio": 1.4501315598893547,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": true
+            },
+            {
+              "group": "APP",
+              "n": 58626,
+              "n_legit": 57322,
+              "n_fraud": 1304,
+              "false_alert_rate": 0.0009246013746903457,
+              "false_alert_ci": [
+                0.0007070043865553972,
+                0.001209087849236567
+              ],
+              "recall": 0.9785276073619632,
+              "recall_ci": [
+                0.969141176618053,
+                0.9851028235727958
+              ],
+              "precision": 0.9601203912716328,
+              "false_alert_ratio": 1.3702516585912998,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "AGENT",
+              "n": 54336,
+              "n_legit": 53987,
+              "n_fraud": 349,
+              "false_alert_rate": 1.8522977753903717e-05,
+              "false_alert_ci": [
+                3.269683780525513e-06,
+                0.00010492644406053409
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9891123949103505,
+                0.9999999999999999
+              ],
+              "precision": 0.9971428571428571,
+              "false_alert_ratio": 0.027450901203598797,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 52.8263734998705,
+          "n_flagged": 2
+        },
+        "device_type": {
+          "label": "Type de téléphone",
+          "groups": [
+            {
+              "group": "smartphone",
+              "n": 109827,
+              "n_legit": 108178,
+              "n_fraud": 1649,
+              "false_alert_rate": 0.0006748137329216662,
+              "false_alert_ci": [
+                0.0005367848059186079,
+                0.0008483053144181863
+              ],
+              "recall": 0.9812007277137659,
+              "recall_ci": [
+                0.9734397515680162,
+                0.986724852227048
+              ],
+              "precision": 0.9568302779420461,
+              "false_alert_ratio": 1.0000684209298034,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "feature_phone",
+              "n": 73413,
+              "n_legit": 72625,
+              "n_fraud": 788,
+              "false_alert_rate": 0.0006746987951807229,
+              "false_alert_ci": [
+                0.0005104250615714594,
+                0.0008917947419728118
+              ],
+              "recall": 0.9708121827411168,
+              "recall_ci": [
+                0.9565828352914074,
+                0.9804732627968971
+              ],
+              "precision": 0.9398034398034398,
+              "false_alert_ratio": 0.9998980841398379,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 1.0001703541517553,
+          "n_flagged": 0
+        },
+        "kyc_level": {
+          "label": "Niveau KYC",
+          "groups": [
+            {
+              "group": "KYC 3",
+              "n": 31422,
+              "n_legit": 31030,
+              "n_fraud": 392,
+              "false_alert_rate": 0.0008701256848211408,
+              "false_alert_ci": [
+                0.0005980937439160598,
+                0.0012657296507357966
+              ],
+              "recall": 0.9795918367346939,
+              "recall_ci": [
+                0.9602513910609407,
+                0.9896235083937905
+              ],
+              "precision": 0.9343065693430657,
+              "false_alert_ratio": 1.2895191327271862,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "KYC 1",
+              "n": 62932,
+              "n_legit": 61919,
+              "n_fraud": 1013,
+              "false_alert_rate": 0.0007590561863079185,
+              "false_alert_ci": [
+                0.000570906837184396,
+                0.001009149850653392
+              ],
+              "recall": 0.9772951628825272,
+              "recall_ci": [
+                0.9661601682910387,
+                0.9848237411005519
+              ],
+              "precision": 0.9546769527483124,
+              "false_alert_ratio": 1.1249150463363162,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "KYC 2",
+              "n": 88886,
+              "n_legit": 87854,
+              "n_fraud": 1032,
+              "false_alert_rate": 0.0005463610080360599,
+              "false_alert_ci": [
+                0.0004121432758147331,
+                0.0007242561414912345
+              ],
+              "recall": 0.9777131782945736,
+              "recall_ci": [
+                0.9667789992172493,
+                0.9851039913867194
+              ],
+              "precision": 0.9545884578997161,
+              "false_alert_ratio": 0.8097025355405223,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 1.5925837898807604,
+          "n_flagged": 0
+        },
+        "segment": {
+          "label": "Segment de clientèle",
+          "groups": [
+            {
+              "group": "agriculteur",
+              "n": 6519,
+              "n_legit": 6358,
+              "n_fraud": 161,
+              "false_alert_rate": 0.0018873859704309531,
+              "false_alert_ci": [
+                0.0010800110416980537,
+                0.0032963318084603026
+              ],
+              "recall": 1.0,
+              "recall_ci": [
+                0.9766952031526023,
+                1.0
+              ],
+              "precision": 0.930635838150289,
+              "false_alert_ratio": 2.7970905378018656,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "etudiant",
+              "n": 17732,
+              "n_legit": 17383,
+              "n_fraud": 349,
+              "false_alert_rate": 0.001438186734165564,
+              "false_alert_ci": [
+                0.0009743721055061809,
+                0.0021223145290577413
+              ],
+              "recall": 0.9885386819484241,
+              "recall_ci": [
+                0.9709051205284708,
+                0.9955342108882329
+              ],
+              "precision": 0.9324324324324325,
+              "false_alert_ratio": 2.131380951617512,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "informel",
+              "n": 39732,
+              "n_legit": 39077,
+              "n_fraud": 655,
+              "false_alert_rate": 0.0008956675282135271,
+              "false_alert_ci": [
+                0.0006441108460628215,
+                0.0012453469285619704
+              ],
+              "recall": 0.9770992366412213,
+              "recall_ci": [
+                0.9625610025312064,
+                0.9860736920600275
+              ],
+              "precision": 0.9481481481481482,
+              "false_alert_ratio": 1.3273719352753306,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "salarie",
+              "n": 37964,
+              "n_legit": 37403,
+              "n_fraud": 561,
+              "false_alert_rate": 0.000668395583241986,
+              "false_alert_ci": [
+                0.0004527928396865492,
+                0.0009865588322813936
+              ],
+              "recall": 0.9732620320855615,
+              "recall_ci": [
+                0.9563557603246415,
+                0.983730805537363
+              ],
+              "precision": 0.9562171628721541,
+              "false_alert_ratio": 0.9905567757123015,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "diaspora_beneficiaire",
+              "n": 12388,
+              "n_legit": 12119,
+              "n_fraud": 269,
+              "false_alert_rate": 0.0006601204719861375,
+              "false_alert_ci": [
+                0.0003345320818565815,
+                0.0013021798916793923
+              ],
+              "recall": 0.9962825278810409,
+              "recall_ci": [
+                0.9792462850751517,
+                0.9993434900910986
+              ],
+              "precision": 0.9710144927536232,
+              "false_alert_ratio": 0.9782931286599148,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "commercant",
+              "n": 68905,
+              "n_legit": 68463,
+              "n_fraud": 442,
+              "false_alert_rate": 0.00024830930575639394,
+              "false_alert_ci": [
+                0.0001550437024340829,
+                0.00039765595649103385
+              ],
+              "recall": 0.9570135746606335,
+              "recall_ci": [
+                0.9338408992188139,
+                0.9723105231697655
+              ],
+              "precision": 0.9613636363636363,
+              "false_alert_ratio": 0.36799235580879747,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": true
+            }
+          ],
+          "max_min_ratio": 7.600947393742021,
+          "n_flagged": 3
+        },
+        "income_band": {
+          "label": "Tranche de revenu",
+          "groups": [
+            {
+              "group": "Q1 (plus modestes)",
+              "n": 46701,
+              "n_legit": 45823,
+              "n_fraud": 878,
+              "false_alert_rate": 0.0012657399122711303,
+              "false_alert_ci": [
+                0.0009793426395163492,
+                0.0016357535751876549
+              ],
+              "recall": 0.989749430523918,
+              "recall_ci": [
+                0.980633861802208,
+                0.9945979712163296
+              ],
+              "precision": 0.9374325782092773,
+              "false_alert_ratio": 1.8758161750685012,
+              "judged": true,
+              "flag_false_alerts": true,
+              "flag_recall": false
+            },
+            {
+              "group": "Q2",
+              "n": 45353,
+              "n_legit": 44709,
+              "n_fraud": 644,
+              "false_alert_rate": 0.0007157395602675077,
+              "false_alert_ci": [
+                0.000507060708671269,
+                0.0010102125750736854
+              ],
+              "recall": 0.9611801242236024,
+              "recall_ci": [
+                0.9433212982790259,
+                0.9735694972487697
+              ],
+              "precision": 0.9508448540706606,
+              "false_alert_ratio": 1.0607201615987392,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": true
+            },
+            {
+              "group": "Q3",
+              "n": 45598,
+              "n_legit": 45119,
+              "n_fraud": 479,
+              "false_alert_rate": 0.00039894501207916845,
+              "false_alert_ci": [
+                0.00025237511208668075,
+                0.0006305834647064972
+              ],
+              "recall": 0.9791231732776617,
+              "recall_ci": [
+                0.9620008353553955,
+                0.9886214805345361
+              ],
+              "precision": 0.9630390143737166,
+              "false_alert_ratio": 0.591233237860245,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            },
+            {
+              "group": "Q4 (plus aisés)",
+              "n": 45588,
+              "n_legit": 45152,
+              "n_fraud": 436,
+              "false_alert_rate": 0.00031006378454996456,
+              "false_alert_ci": [
+                0.00018471318616817328,
+                0.0005204358902693701
+              ],
+              "recall": 0.9770642201834863,
+              "recall_ci": [
+                0.9582999406589774,
+                0.987495091006968
+              ],
+              "precision": 0.9681818181818181,
+              "false_alert_ratio": 0.45951198719661673,
+              "judged": true,
+              "flag_false_alerts": false,
+              "flag_recall": false
+            }
+          ],
+          "max_min_ratio": 4.082192037061862,
+          "n_flagged": 2
+        }
+      }
+    }
+  }
+}

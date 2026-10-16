@@ -319,3 +319,24 @@ def test_cost_policy_simulate_save_and_history(client, analyst, admin):
     after = client.get("/policy", headers=analyst).json()
     assert after["active_id"] == r.json()["id"] and after["active"]["version"] == r.json()["version"]
     assert after["history"][0]["simulation"]["changed"] >= 1
+
+
+def test_fairness_live_flags_overalerted_group(client, analyst):
+    now = datetime.now(timezone.utc)
+    with engine.begin() as c:
+        for prov, n, alerts in (("Equateur", 400, 40), ("Maniema", 400, 2)):
+            for i in range(n):
+                c.execute(insert(ScoredTransaction).values(
+                    transaction_id=f"TX-EQ-{prov}-{i}", tx_time=datetime(2025, 11, 7, 9, 0), scored_at=now,
+                    user_id=f"UEQ{prov}", channel="MOBILE_MONEY", operator="ORANGE", tx_type="P2P_SEND",
+                    access_channel="USSD", amount=10.0, currency="USD", amount_usd=10.0, province=prov, device_id="DEQ",
+                    fraud_probability=0.5, risk_level="MOYEN", action="VERIFY" if i < alerts else "APPROVE", reason="t",
+                    rules_triggered=[], model_version="t", latency_ms=1.0, degraded=False, explanation={},
+                    features={"kyc_level": 1, "is_smartphone": 0}))
+    r = client.get("/fairness/live?dimension=province&days=1", headers=analyst)
+    assert r.status_code == 200, r.text
+    g = {x["group"]: x for x in r.json()["groups"]}
+    assert g["Equateur"]["flagged"] is True and g["Maniema"]["flagged"] is False
+    assert g["Equateur"]["alert_ci"][0] < 0.1 < g["Equateur"]["alert_ci"][1]
+    assert client.get("/fairness/live?dimension=kyc_level&days=1", headers=analyst).status_code == 200
+    assert client.get("/fairness/live?dimension=revenu", headers=analyst).status_code == 422
