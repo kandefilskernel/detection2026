@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
-  Activity, ArrowLeftRight, Bell, Building2, ChevronRight, LogOut, Map as MapIcon, Menu, Moon, KeyRound, ListChecks, Scale, Search, ShieldAlert, ShieldCheck, Sun, Users, Waypoints, X,
+  Activity, ArrowLeftRight, Bell, Building2, ChevronRight, LogOut, Map as MapIcon, Menu, Moon, KeyRound, ListChecks, Scale, Scale3d, Search, ShieldAlert, ShieldCheck, Sun, Users, Waypoints, X,
 } from "lucide-react";
 import { DrcFlag } from "@/components/drc-flag";
 import { getToken, getUser, logout, type User } from "@/lib/api";
@@ -26,6 +26,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     { href: "/audit", label: "Journal d'audit", icon: ShieldCheck, role: "SUPERVISEUR" },
     { href: "/utilisateurs", label: "Utilisateurs", icon: Users, role: "ADMIN" },
     { href: "/politique", label: "Politique de décision", icon: Scale, role: "SUPERVISEUR" },
+    { href: "/equite", label: "Équité du modèle", icon: Scale3d, role: "SUPERVISEUR" },
     { href: "/institutions", label: "Institutions & API", icon: Building2, role: "ADMIN" },
     { href: "/securite", label: "Sécurité du compte", icon: KeyRound, role: "ANALYSTE" },
   ] },

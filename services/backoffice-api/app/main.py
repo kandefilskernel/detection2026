@@ -22,7 +22,7 @@ from shared.utils.metrics import metrics_response
 from app import events
 from app.config import settings
 from app.db import SessionLocal, engine
-from app.routers import (audit, auth, cases, feedback, institutions, network, nlp, policy, reports, retraining,
+from app.routers import (audit, auth, cases, fairness, feedback, institutions, network, nlp, policy, reports, retraining,
                          transactions)
 from shared.logging.logger_config import configure_logging
 
@@ -45,7 +45,8 @@ app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in settings.CO
 Instrumentator(excluded_handlers=["/metrics", "/health"]).instrument(app)
 
 for r in (auth.router, transactions.router, cases.router, reports.router, audit.router, nlp.router, retraining.router,
-          institutions.router, network.router, feedback.router, policy.router):
+          institutions.router, network.router, feedback.router, policy.router,
+          fairness.router):
     app.include_router(r)
 
 

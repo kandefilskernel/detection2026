@@ -209,6 +209,24 @@ bloquer au-dessus du seuil F1 coûte 2 354 USD (98,4 % des fraudes stoppées), l
 (99,9 %), et 976 USD une fois réglée sur la première moitié. En contrepartie, la part de clients honnêtes gênés passe de
 0,08 % à 0,63 %, surtout par des vérifications. Les coûts métier sont des hypothèses à remplacer par ceux des opérateurs.
 
+### Équité du modèle
+Une fausse alerte pèse plus lourd sur un client rural en USSD, loin d'un agent. L'écran **Équité du modèle**
+(http://localhost/equite) compare les groupes de clients :
+- **en production**, le taux d'alerte par province, opérateur, canal d'accès, niveau KYC et type de téléphone ;
+- **hors ligne, avec la vérité complète**, le taux de fausses alertes et le rappel, en ajoutant le segment de clientèle et
+  la tranche de revenu.
+
+Chaque taux a son intervalle de confiance de Wilson. Un groupe est signalé quand son taux dépasse 1,25 fois le taux
+global avec un écart significatif. API : `GET /fairness/live`, `GET /fairness/evaluation`.
+```powershell
+python -m ml.robustness.evaluate_fairness   # -> ml/reports/fairness_evaluation.md
+```
+Sur la période de test (taux global de fausses alertes : 0,58 %), les clients les plus modestes en subissent 0,84 %,
+soit 2,3 fois plus que les plus aisés (0,37 %). Les agriculteurs (1,87 fois le taux global), les étudiants (1,52) et
+les comptes KYC 1 (1,26) sont aussi signalés. Le rappel reste proche de 100 % dans tous les groupes. Le générateur ne
+modélise pas de biais social : ces écarts viennent des comportements simulés (montants, canaux), et la mesure est à
+refaire sur les données réelles avant toute conclusion.
+
 ### Sécurité du back-office
 - **Double authentification (TOTP, RFC 6238)** : obligatoire pour les rôles de `REQUIRE_2FA_ROLES` (superviseur et
   administrateur par défaut) ; à la première connexion, l'écran **Sécurité du compte** guide l'activation (Google
