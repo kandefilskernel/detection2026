@@ -1,0 +1,44 @@
+@startuml activite_processus_existant
+' Diagramme d'activité : processus métier existant (contrôle par règles statiques, a posteriori)
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam activity {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+}
+title Processus existant — contrôle anti-fraude par règles statiques
+
+|Client|
+start
+:Initier une opération\n(USSD ou application);
+:Saisir le code PIN;
+|Système de l'opérateur|
+:Vérifier le PIN et le solde;
+if (Montant > seuil fixe\nou numéro en liste noire ?) then (oui)
+  :Rejeter l'opération;
+  |Client|
+  :Recevoir un message de refus;
+  stop
+else (non)
+  |Système de l'opérateur|
+  :Exécuter l'opération;
+  :Débiter / créditer les portefeuilles;
+endif
+|Client|
+:Recevoir le SMS de confirmation;
+if (Opération reconnue ?) then (oui)
+  stop
+else (non : fraude subie)
+  :Appeler le service client\n(plainte, souvent tardive);
+endif
+|Service anti-fraude|
+:Enregistrer la plainte\n(saisie manuelle);
+:Reconstituer l'historique\nà partir des journaux;
+if (Fonds encore récupérables ?) then (oui)
+  :Geler le compte bénéficiaire;
+else (non)
+  :Constater la perte;
+endif
+:Ajuster éventuellement\nles seuils et la liste noire;
+stop
+@enduml

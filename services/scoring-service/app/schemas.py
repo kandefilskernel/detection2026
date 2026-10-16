@@ -36,6 +36,7 @@ class ScoreResponse(BaseModel):
     text_analysis: dict | None = None         # sentiment et indices d'ingénierie sociale du memo, s'il y en a un
     expected_costs_usd: dict[str, float]
     rules_triggered: list[str]
+    policy_version: str | None = None         # version de la politique de coût appliquée
     known_user: bool
     explanation: Explanation
     degraded: bool

@@ -8,6 +8,8 @@ import { LiveDot, PageHeader } from "@/components/app-shell";
 import { ActionBadge, RiskBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState } from "@/components/ui/card";
 import { ContinuousLearning } from "@/components/continuous-learning";
+import { ModelComparison } from "@/components/model-comparison";
+import { ModelPerformance } from "@/components/model-performance";
 import { Segmented } from "@/components/ui/select";
 import { Stat } from "@/components/ui/stat";
 import { usePolling } from "@/lib/use-polling";
@@ -19,7 +21,7 @@ const BUCKET: Record<Window, number> = { "15": 15, "60": 60, "1440": 900, "10080
 const AXIS = { fontSize: 11, fill: "hsl(var(--muted-foreground))" };
 
 export default function Dashboard() {
-  const [minutes, setMinutes] = useState<Window>("60");
+  const [minutes, setMinutes] = useState<Window>("1440");
   const kpis = usePolling<any>(`/reports/kpis?minutes=${minutes}`);
   const series = usePolling<any[]>(`/reports/timeseries?minutes=${minutes}&bucket_seconds=${BUCKET[minutes]}`, 5000);
   const byOperator = usePolling<any[]>(`/reports/breakdown?dimension=operator&minutes=${minutes}`, 10000);
@@ -44,7 +46,7 @@ export default function Dashboard() {
         <Segmented value={minutes} onChange={setMinutes} options={WINDOWS} />
       </PageHeader>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
         <Stat label="Transactions scorées" icon={<Zap />} value={k ? fmtInt(k.volume) : undefined} hint={k && `${fmtUsd(k.amount_usd)} traités`} />
         <Stat label="Taux d'alerte" icon={<ShieldAlert />} tone="warn" value={k ? fmtPct(k.alert_rate, 2) : undefined}
           hint={k && `${fmtInt(k.verified)} à vérifier · ${fmtInt(k.blocked)} bloquées`} />
@@ -182,6 +184,8 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+      <ModelPerformance />
+      <ModelComparison />
       <ContinuousLearning />
     </>
   );

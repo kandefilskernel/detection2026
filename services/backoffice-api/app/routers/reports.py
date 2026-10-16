@@ -2,10 +2,14 @@
 (horloge réelle du scoring) ; les analyses métier utilisent tx_time (heure de la transaction)."""
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
 from app.security import get_current_user, require_role
 
@@ -140,3 +144,21 @@ def top_risky_users(minutes: int = Query(60 * 24, ge=1), limit: int = Query(10, 
         WHERE action <> 'APPROVE' AND scored_at >= now() - make_interval(mins => :m)
         GROUP BY user_id ORDER BY alerts DESC, max_probability DESC LIMIT :l
     """, m=minutes, l=limit)
+
+
+@router.get("/confusion")
+def confusion(_=Depends(get_current_user)):
+    """Matrices de confusion du modèle en place sur la période de test (écrites par ml.training.confusion_report)."""
+    try:
+        return json.loads((Path(settings.RAG_INDEX_PATH).parent / "confusion_matrices.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+@router.get("/model-comparison")
+def model_comparison(_=Depends(get_current_user)):
+    """Comparaison des méthodes d'apprentissage et choix du modèle (écrite par ml.training.model_selection)."""
+    try:
+        return json.loads((Path(settings.RAG_INDEX_PATH).parent / "model_selection.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None

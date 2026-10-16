@@ -1,0 +1,26 @@
+@startuml etats_dossier
+' Diagramme d'états-transitions : cycle de vie d'un dossier d'alerte (table cases)
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam state {
+  BackgroundColor #EEF4FF
+  BorderColor #2563EB
+}
+title Cycle de vie d'un dossier d'alerte
+
+[*] --> OUVERT : décision VERIFY ou BLOCK\n(worker alerter)
+[*] --> FRAUDE_CONFIRMEE : plainte du client\nou retour d'une institution
+OUVERT --> EN_COURS : prise en charge\npar un analyste
+EN_COURS --> OUVERT : remise en file
+OUVERT --> FRAUDE_CONFIRMEE : verdict + note
+OUVERT --> FAUX_POSITIF : verdict + note
+EN_COURS --> FRAUDE_CONFIRMEE : verdict + note
+EN_COURS --> FAUX_POSITIF : verdict + note
+FRAUDE_CONFIRMEE --> [*] : étiquette y = 1
+FAUX_POSITIF --> [*] : étiquette y = 0
+
+state OUVERT : file priorisée\n(risque, montant)
+state EN_COURS : affecté à un analyste
+state FRAUDE_CONFIRMEE : état final
+state FAUX_POSITIF : état final
+@enduml

@@ -71,14 +71,14 @@ def lstm_logit(model: LSTMAttentionBranch, X: np.ndarray, seq_idx: np.ndarray, r
 def train_lstm_branch(X: np.ndarray, y: np.ndarray, seq_idx: np.ndarray, fit_rows: np.ndarray,
                       es_rows: np.ndarray, epochs: int = 8, batch_size: int = 512, lr: float = 1e-3,
                       neg_sample_rate: float = 0.3, patience: int = 2, hidden_dim: int = 64,
-                      seed: int = 42, log=print, weight_decay: float = 1e-5, dropout: float = 0.2) -> LSTMAttentionBranch:
+                      seed: int = 42, log=print, weight_decay: float = 1e-2, dropout: float = 0.2) -> LSTMAttentionBranch:
     """Entraînement avec sous-échantillonnage des transactions légitimes à chaque époque
     (toutes les fraudes + neg_sample_rate des légitimes, tirées à nouveau à chaque époque)
     et arrêt précoce sur la PR-AUC de la tranche early_stop."""
     torch.manual_seed(seed)
     rng = np.random.default_rng(seed)
     model = LSTMAttentionBranch(X.shape[1], hidden_dim=hidden_dim, dropout=dropout)
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
 
     pos_rows, neg_rows = fit_rows[y[fit_rows] == 1], fit_rows[y[fit_rows] == 0]
     ratio = len(neg_rows) * neg_sample_rate / max(len(pos_rows), 1)

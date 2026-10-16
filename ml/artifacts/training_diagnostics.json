@@ -140,37 +140,37 @@
   },
   "lstm_attention": {
     "verdict": "SURAPPRENTISSAGE_LEGER",
-    "reason": "la perte de validation remonte de 12% alors que celle d'entraînement baisse",
+    "reason": "la perte de validation remonte de 10% alors que celle d'entraînement baisse",
     "epochs": 8,
     "best_epoch": 7,
-    "train_loss_at_best": 0.00924,
-    "val_loss_at_best": 0.01193,
-    "generalization_gap": 0.2912,
-    "val_rise_after_best": 0.1213,
-    "train_pr_auc_at_best": 0.9906,
+    "train_loss_at_best": 0.00949,
+    "val_loss_at_best": 0.01223,
+    "generalization_gap": 0.2899,
+    "val_rise_after_best": 0.1029,
+    "train_pr_auc_at_best": 0.9907,
     "val_pr_auc_at_best": 0.9929,
-    "metric_gap": -0.0023,
+    "metric_gap": -0.0022,
     "unit": "BCE / époque",
     "curve": {
       "train": [
-        0.02339,
-        0.01299,
-        0.00794,
-        0.01354,
-        0.00829,
-        0.00962,
-        0.00924,
-        0.00795
+        0.02311,
+        0.01262,
+        0.00795,
+        0.01368,
+        0.00835,
+        0.0097,
+        0.00949,
+        0.0079
       ],
       "val": [
-        0.02671,
-        0.01464,
-        0.0089,
-        0.01623,
-        0.00924,
-        0.01172,
-        0.01193,
-        0.00999
+        0.02638,
+        0.01414,
+        0.00893,
+        0.01635,
+        0.00939,
+        0.01173,
+        0.01223,
+        0.00985
       ]
     }
   },
@@ -255,7 +255,7 @@
   "worst": "SURAPPRENTISSAGE_LEGER",
   "meta": {
     "quick": false,
-    "seconds": 377,
+    "seconds": 403,
     "fit_rows": 233048,
     "es_rows": 77008
   }

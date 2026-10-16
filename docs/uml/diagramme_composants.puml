@@ -1,0 +1,170 @@
+@startuml diagramme_composants
+' Diagramme de composants : composants logiciels, interfaces fournies / requises
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam componentStyle uml2
+skinparam ArrowColor #475569
+skinparam component {
+  BackgroundColor #EEF4FF
+  BorderColor #2563EB
+}
+
+title Diagramme de composants — Détection de fraude (RDC)
+
+actor "Opérateurs\n(Vodacom, Airtel,\nOrange, Visa)" as Ops
+actor "Analyste /\nSuperviseur /\nAdmin" as User
+actor "Banques\npartenaires" as Banks
+actor "Régulateur\n(BCC)" as BCC
+
+package "Présentation" {
+  component [Reverse proxy\nNginx] as Nginx
+  component [Tableau de bord\nNext.js] as Front
+}
+
+package "Intégration" {
+  component "Couche d'intégration" as Integ {
+    portin "POST /ingest/v1/transactions/{operateur}" as pIngest
+    portin "API partenaires /v1" as pPartner
+    component [Clés API +\ndroits par institution] as Keys
+    component [Format commun\n/v1/transactions] as Unified
+    component [Retours de fraude,\nstatistiques,\nsupervision BCC] as PartnerR
+    component [Adaptateurs\nVodacom / Airtel /\nOrange / Visa] as Adapt
+    component [Convertisseur\nde devises (FX)] as Fx
+    component [Relances bornées] as Retry
+  }
+}
+
+package "Détection temps réel" {
+  component "Service de scoring" as Scoring {
+    portin "POST /v1/score" as pScore
+    component [Feature store\n(profilage 58 variables)] as FS
+    component [Lois physiques\n(cinématique, conservation)] as Phys
+    component [Modèle hybride\nXGBoost + LSTM-attention\n+ autoencodeur + méta] as Model
+    component [Classifieur\nde type de fraude] as TypeC
+    component [Explicabilité SHAP] as Shap
+    component [Analyse NLP\n(sentiment, ingénierie sociale)] as Nlp
+    component [Preuves RAG\n(cas similaires + base\nde connaissances)] as Rag
+    component [Politique de décision\n(coûts, APPROVE/VERIFY/BLOCK)] as Dec
+    component [Idempotence +\ncontrôle de cohérence] as Idem
+  }
+}
+
+package "Traitement asynchrone" {
+  queue "Bus d'événements Kafka" as Kafka
+  component [Worker persister] as WP
+  component [Worker alerter] as WA
+  component [Worker auditor\n(journal chaîné)] as WAu
+}
+
+package "Back-office" {
+  component "API back-office" as Bo {
+    portin "REST /api" as pApi
+    component [Authentification JWT\n+ rôles] as Auth
+    component [Transactions & preuves] as RTx
+    component [Dossiers, revue,\nplaintes] as RCases
+    component [Rapports & KPIs] as RRep
+    component [Journal d'audit] as RAud
+    component [Analyse de message] as RNlp
+    component [Pilotage du\nréentraînement] as RRet
+  }
+}
+
+package "Apprentissage continu" {
+  component [Moniteur de dérive\n(KS, PSI, nouveauté)] as Drift
+  component [Planificateur de\nréentraînement] as Sched
+  component [Entraînement challenger\n+ porte de détection\n+ diagnostic surapprentissage] as Retrain
+  component [Registre MLflow] as Mlflow
+}
+
+package "Données" {
+  database "PostgreSQL /\nTimescaleDB" as Pg
+  database "Redis" as Redis
+  folder "Artefacts du modèle" as Art
+}
+
+package "Supervision" {
+  component [Prometheus\n+ règles d'alerte] as Prom
+  component [Grafana] as Graf
+  component [Loki / Promtail] as Loki
+  component [Notifications\n(e-mail / SMS)] as Notif
+}
+
+' interfaces
+interface "ITransactionUnifiee" as ITx
+interface "IEvenements" as IEv
+interface "IMetriques /metrics" as IMet
+interface "IAPI REST" as IRest
+
+' --------------------------------------------------- liaisons
+Ops --> pIngest
+Banks --> pPartner
+BCC --> pPartner
+pPartner --> Keys
+pIngest --> Keys
+Keys --> Unified
+Keys --> PartnerR
+Unified --> Retry
+PartnerR ..> Pg : étiquettes, agrégats
+PartnerR --> Kafka : analyst.feedback, audit.logs
+pIngest --> Adapt
+Adapt --> Fx
+Adapt --> Retry
+Retry --> ITx
+ITx - pScore
+
+pScore --> Idem
+Idem --> FS
+FS --> Phys
+FS --> Model
+Model --> TypeC
+Model --> Shap
+Model --> Rag
+pScore --> Nlp
+Phys --> Dec
+Nlp --> Dec
+Model --> Dec
+FS ..> Redis
+Scoring ..> Art
+Dec --> IEv
+IEv - Kafka
+
+Kafka --> WP
+Kafka --> WA
+Kafka --> WAu
+WP ..> Pg
+WA ..> Pg
+WA --> Notif
+WAu ..> Pg
+
+User --> Nginx
+Nginx --> Front
+Front --> IRest
+IRest - pApi
+pApi --> Auth
+Auth --> RTx
+Auth --> RCases
+Auth --> RRep
+Auth --> RAud
+Auth --> RNlp
+Auth --> RRet
+Bo ..> Pg
+RCases --> Kafka : analyst.feedback
+RNlp ..> Nlp : même analyseur
+RTx ..> Rag : mêmes preuves
+
+Drift ..> Pg
+Sched --> Drift
+Sched --> Retrain
+RRet --> Sched : demande manuelle
+Retrain ..> Pg : étiquettes
+Retrain --> Art : promotion si meilleur
+Retrain --> Mlflow
+
+Scoring - IMet
+Bo - IMet
+Drift - IMet
+Prom --> IMet
+Graf --> Prom
+Graf --> Loki
+
+@enduml

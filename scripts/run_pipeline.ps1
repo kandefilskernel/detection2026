@@ -38,6 +38,10 @@ Write-Host "`n=== Typologie de fraude (second étage : quel type de fraude ?) ==
 python -m ml.training.train_fraud_type
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+Write-Host "`n=== Matrices de confusion (détecteur et typologie, période de test) ===" -ForegroundColor Cyan
+python -m ml.training.confusion_report
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 Write-Host "`n=== Référence de dérive (supervision du modèle en production) ===" -ForegroundColor Cyan
 python -m ml.monitoring.build_reference
 exit $LASTEXITCODE

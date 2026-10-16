@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  Activity, ArrowLeftRight, LogOut, Map as MapIcon, Menu, Moon, Search, ShieldAlert, ShieldCheck, Sun, Users, X,
+  Activity, ArrowLeftRight, Bell, Building2, ChevronRight, LogOut, Map as MapIcon, Menu, Moon, KeyRound, ListChecks, Scale, Search, ShieldAlert, ShieldCheck, Sun, Users, Waypoints, X,
 } from "lucide-react";
 import { DrcFlag } from "@/components/drc-flag";
 import { getToken, getUser, logout, type User } from "@/lib/api";
@@ -19,15 +19,20 @@ const NAV: { section: string; items: NavItem[] }[] = [
     { href: "/carte", label: "Carte des fraudes", icon: MapIcon, role: "ANALYSTE" },
     { href: "/transactions", label: "Transactions", icon: ArrowLeftRight, role: "ANALYSTE" },
     { href: "/alertes", label: "Alertes & dossiers", icon: ShieldAlert, role: "ANALYSTE", badge: "cases" },
+    { href: "/reseaux", label: "Réseaux de fraude", icon: Waypoints, role: "ANALYSTE" },
+    { href: "/revue", label: "Revue & qualité", icon: ListChecks, role: "ANALYSTE" },
   ] },
   { section: "Gouvernance", items: [
     { href: "/audit", label: "Journal d'audit", icon: ShieldCheck, role: "SUPERVISEUR" },
     { href: "/utilisateurs", label: "Utilisateurs", icon: Users, role: "ADMIN" },
+    { href: "/politique", label: "Politique de décision", icon: Scale, role: "SUPERVISEUR" },
+    { href: "/institutions", label: "Institutions & API", icon: Building2, role: "ADMIN" },
+    { href: "/securite", label: "Sécurité du compte", icon: KeyRound, role: "ANALYSTE" },
   ] },
 ];
 const RANK = { ANALYSTE: 0, SUPERVISEUR: 1, ADMIN: 2 };
 /** Rôle minimal par section d'URL (miroir du RBAC du back-office). */
-const ROUTE_ROLE: Record<string, keyof typeof RANK> = { "/audit": "SUPERVISEUR", "/utilisateurs": "ADMIN" };
+const ROUTE_ROLE: Record<string, keyof typeof RANK> = { "/audit": "SUPERVISEUR", "/utilisateurs": "ADMIN", "/institutions": "ADMIN" };
 function allowed(role: keyof typeof RANK, path: string) {
   const need = Object.entries(ROUTE_ROLE).find(([p]) => path === p || path.startsWith(p + "/"))?.[1];
   return !need || RANK[role] >= RANK[need];
@@ -47,8 +52,12 @@ export function Logo({ className }: { className?: string }) {
 function Sidebar({ user, openCases, onNavigate }: { user: User; openCases?: number; onNavigate?: () => void }) {
   const path = usePathname();
   return (
-    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex items-center gap-3 px-5 py-5">
+    <div className="relative flex h-full flex-col bg-sidebar text-sidebar-foreground">
+      <div aria-hidden className="flex h-[3px] w-full shrink-0">
+        <span className="flex-[7] bg-[#007FFF]" /><span className="flex-1 bg-[#F7D618]" /><span className="flex-[2] bg-[#CE1021]" />
+      </div>
+      <div aria-hidden className="pointer-events-none absolute -left-24 top-10 h-56 w-56 rounded-full bg-[hsl(221_83%_53%)] opacity-[.12] blur-3xl" />
+      <div className="relative flex items-center gap-3 px-5 py-5">
         <Logo />
         <div className="leading-tight">
           <div className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-white">
@@ -58,7 +67,7 @@ function Sidebar({ user, openCases, onNavigate }: { user: User; openCases?: numb
         </div>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 pt-2">
+      <nav className="relative flex-1 space-y-6 overflow-y-auto px-3 pt-2">
         {NAV.map(({ section, items }) => {
           const visible = items.filter((n) => RANK[user.role] >= RANK[n.role]);
           if (!visible.length) return null;
@@ -89,7 +98,8 @@ function Sidebar({ user, openCases, onNavigate }: { user: User; openCases?: numb
         })}
       </nav>
 
-      <div className="m-3 rounded-xl border border-sidebar-border bg-white/[.03] p-3">
+      <LiveStatus />
+      <div className="relative mx-3 mb-3 rounded-xl border border-sidebar-border bg-white/[.03] p-3">
         <div className="flex items-center gap-3">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-slate-600 to-slate-800 text-xs font-semibold text-white ring-2 ring-white/10">
             {initials(user.full_name)}
@@ -108,22 +118,92 @@ function Sidebar({ user, openCases, onNavigate }: { user: User; openCases?: numb
   );
 }
 
-function TopBar({ onMenu }: { onMenu: () => void }) {
+/** Heure de Kinshasa (UTC+1), rafraîchie chaque minute. */
+function useKinshasaTime() {
+  const [now, setNow] = useState<string>("");
+  useEffect(() => {
+    const fmt = () => new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Africa/Kinshasa" });
+    setNow(fmt());
+    const id = setInterval(() => setNow(fmt()), 30000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
+
+/** Bandeau d'état du système dans la barre latérale. */
+function LiveStatus() {
+  const time = useKinshasaTime();
+  return (
+    <div className="relative mx-3 mb-2 flex items-center justify-between gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-[11px] text-sidebar-foreground/70">
+      <span className="flex items-center gap-2">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-risk-faible opacity-60" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-risk-faible" />
+        </span>
+        Temps réel
+      </span>
+      <span className="tabular whitespace-nowrap">{time && `Kinshasa · ${time}`}</span>
+    </div>
+  );
+}
+
+/** Fil d'Ariane : rubrique › page, déduit de la navigation. */
+function Breadcrumb() {
+  const path = usePathname();
+  let found: { section: string; label: string; href: string } | null = null;
+  for (const { section, items } of NAV) for (const it of items) {
+    const match = it.href === "/" ? path === "/" : path.startsWith(it.href);
+    if (match && (!found || it.href.length > found.href.length)) found = { section, label: it.label, href: it.href };
+  }
+  if (!found) return null;
+  const detail = path !== found.href && found.href !== "/";
+  return (
+    <nav aria-label="Fil d'Ariane" className="hidden min-w-0 items-center gap-1.5 text-[13px] lg:flex">
+      <span className="text-muted-foreground">{found.section}</span>
+      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+      {detail ? (
+        <>
+          <Link href={found.href} className="text-muted-foreground transition-colors hover:text-foreground">{found.label}</Link>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
+          <span className="truncate font-medium">Détail</span>
+        </>
+      ) : <span className="truncate font-medium">{found.label}</span>}
+    </nav>
+  );
+}
+
+function TopBar({ onMenu, openCases }: { onMenu: () => void; openCases?: number }) {
   const router = useRouter();
   const { theme, toggle } = useTheme();
   const [q, setQ] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  // Ctrl+K (ou ⌘K) : aller directement à la recherche
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") { e.preventDefault(); searchRef.current?.focus(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur-xl md:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/75 px-4 backdrop-blur-xl md:px-6">
       <button onClick={onMenu} className="rounded-md p-1.5 hover:bg-muted md:hidden" aria-label="Menu"><Menu className="h-5 w-5" /></button>
-      <form className="relative w-full max-w-md" onSubmit={(e) => {
+      <Breadcrumb />
+      <form className="relative w-full max-w-md lg:ml-auto" onSubmit={(e) => {
         e.preventDefault();
         if (q.trim()) router.push(`/transactions?search=${encodeURIComponent(q.trim())}`);
       }}>
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher une transaction ou un client…"
-          className="h-9 w-full rounded-lg border bg-card pl-9 pr-3 text-sm shadow-sm placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none focus:ring-4 focus:ring-primary/15" />
+        <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher une transaction ou un client…"
+          className="h-9 w-full rounded-lg border bg-card pl-9 pr-14 text-sm shadow-sm placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none focus:ring-4 focus:ring-primary/15" />
+        <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:block">Ctrl K</kbd>
       </form>
-      <div className="ml-auto flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-1 lg:ml-0">
+        <Link href="/alertes" aria-label="Alertes à traiter" title="Alertes à traiter"
+          className="relative grid h-9 w-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+          <Bell className="h-[18px] w-[18px]" />
+          {!!openCases && <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-risk-critique ring-2 ring-background" />}
+        </Link>
         <button onClick={toggle} aria-label={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
           title={theme === "dark" ? "Mode clair" : "Mode sombre"}
           className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
@@ -153,7 +233,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!user || !allowed(user.role, path)) return null;
 
   return (
-    <div className="flex min-h-screen">
+    <div className="app-backdrop flex min-h-screen">
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 md:block">
         <Sidebar user={user} openCases={cases.data?.total} />
       </aside>
@@ -169,8 +249,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar onMenu={() => setDrawer(true)} />
-        <main key={path} className="mx-auto w-full max-w-[1500px] flex-1 animate-fade-up p-4 md:p-6 lg:p-8">{children}</main>
+        <TopBar onMenu={() => setDrawer(true)} openCases={cases.data?.total} />
+        <main key={path} className="relative mx-auto w-full max-w-[1500px] flex-1 animate-fade-up p-4 md:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );
@@ -179,13 +259,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 export function PageHeader({ title, subtitle, eyebrow, children }:
   { title: string; subtitle?: string; eyebrow?: string; children?: React.ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div className="min-w-0">
-        {eyebrow && <div className="mb-1 text-[11px] font-semibold uppercase tracking-[.14em] text-primary">{eyebrow}</div>}
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+    <div className="mb-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          {eyebrow && (
+            <div className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.14em] text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-gradient-to-br from-primary to-accent" />{eyebrow}
+            </div>
+          )}
+          <h1 className="text-[26px] font-semibold leading-tight tracking-tight">{title}</h1>
+          {subtitle && <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{subtitle}</p>}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">{children}</div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">{children}</div>
+      <div aria-hidden className="mt-5 h-px w-full bg-gradient-to-r from-primary/40 via-border to-transparent" />
     </div>
   );
 }

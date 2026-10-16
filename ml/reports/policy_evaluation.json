@@ -1,0 +1,96 @@
+{
+  "threshold_f1": 0.5384487964065672,
+  "n_eval": 91620,
+  "n_eval_frauds": 1207,
+  "tuned_on": 91620,
+  "tuned_params": {
+    "costs": {
+      "MOBILE_MONEY": {
+        "friction_usd": 0.3,
+        "step_up_catch_rate": 0.85,
+        "false_block_usd": 8.0,
+        "false_block_amount_share": 0.05
+      },
+      "VISA_VIRTUAL": {
+        "friction_usd": 0.15,
+        "step_up_catch_rate": 0.9,
+        "false_block_usd": 12.0,
+        "false_block_amount_share": 0.05
+      }
+    },
+    "operator_overrides": {},
+    "block_floor": 0.9,
+    "approve_ceiling": 0.01,
+    "version": "réglée (plancher 0.9, faux blocage x2.0, friction x1.0)"
+  },
+  "policies": {
+    "seuil_F1_blocage": {
+      "n": 91620,
+      "frauds": 1207,
+      "fraud_blocked": 1188,
+      "fraud_verified": 0,
+      "fraud_missed": 19,
+      "legit_blocked": 75,
+      "legit_verified": 0,
+      "fraud_loss": 1806.82,
+      "friction": 0.0,
+      "false_block": 547.4,
+      "total": 2354.22,
+      "blocks": 1263,
+      "verifications": 0,
+      "legit_friction_rate": 0.0008295267273511552,
+      "fraud_stopped_rate": 0.9842584921292461
+    },
+    "seuil_F1_verification": {
+      "n": 91620,
+      "frauds": 1207,
+      "fraud_blocked": 0,
+      "fraud_verified": 1188,
+      "fraud_missed": 19,
+      "legit_blocked": 0,
+      "legit_verified": 75,
+      "fraud_loss": 37932.97,
+      "friction": 358.95,
+      "false_block": 0.0,
+      "total": 38291.92,
+      "blocks": 0,
+      "verifications": 1263,
+      "legit_friction_rate": 0.0008295267273511552,
+      "fraud_stopped_rate": 0.9842584921292461
+    },
+    "cout_defaut": {
+      "n": 91620,
+      "frauds": 1207,
+      "fraud_blocked": 1182,
+      "fraud_verified": 24,
+      "fraud_missed": 1,
+      "legit_blocked": 79,
+      "legit_verified": 487,
+      "fraud_loss": 133.34,
+      "friction": 153.15,
+      "false_block": 730.08,
+      "total": 1016.57,
+      "blocks": 1261,
+      "verifications": 511,
+      "legit_friction_rate": 0.006260161702410051,
+      "fraud_stopped_rate": 0.9991714995857498
+    },
+    "cout_regle": {
+      "n": 91620,
+      "frauds": 1207,
+      "fraud_blocked": 1166,
+      "fraud_verified": 40,
+      "fraud_missed": 1,
+      "legit_blocked": 59,
+      "legit_verified": 507,
+      "fraud_loss": 235.96,
+      "friction": 163.95,
+      "false_block": 575.59,
+      "total": 975.51,
+      "blocks": 1225,
+      "verifications": 547,
+      "legit_friction_rate": 0.006260161702410051,
+      "fraud_stopped_rate": 0.9991714995857498
+    }
+  }
+}

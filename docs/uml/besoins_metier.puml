@@ -1,0 +1,127 @@
+@startuml besoins_metier
+' Diagramme des cas d'utilisation : besoins métiers (BM-01 à BM-21) du système de détection de fraude
+' Rendu : https://www.plantuml.com/plantuml ou extension PlantUML (VS Code, IntelliJ)
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam usecase {
+  BackgroundColor #EEF4FF
+  BorderColor #2563EB
+  ArrowColor #475569
+}
+skinparam actorStyle awesome
+
+title Besoins métiers — Détection de fraude Mobile Money et cartes Visa virtuelles (RDC)
+
+' ------------------------------------------------------------ acteurs
+actor "Client\n(titulaire)" as Client
+actor "Opérateur Mobile Money\n(Vodacom, Airtel, Orange)" as Operateur
+actor "Émetteur\nVisa virtuelle" as Visa
+actor "Banque\npartenaire" as Banque
+actor "Analyste\nanti-fraude" as Analyste
+actor "Superviseur" as Superviseur
+actor "Administrateur" as Admin
+actor "Régulateur (BCC)\n/ auditeur" as Regulateur
+
+Superviseur -|> Analyste
+Visa -|> Operateur
+Banque -|> Operateur
+
+rectangle "Système de détection de fraude" {
+
+  package "Détection en temps réel" {
+    usecase "Soumettre une opération\nau scoring\n(BM-11)" as UC_Soumettre
+    usecase "Détecter la fraude avant\nl'exécution (BM-01)" as UC_Detecter
+    usecase "Comparer l'opération au\ncomportement habituel du client\n(BM-02)" as UC_Profil
+    usecase "Graduer la réponse :\nlaisser passer / vérifier / bloquer\n(BM-03, BM-04)" as UC_Decider
+    usecase "Identifier le type\nde fraude (BM-05)" as UC_Type
+    usecase "Repérer l'ingénierie sociale\n(BM-10)" as UC_IS
+    usecase "Prévenir le client\n(BM-08)" as UC_Prevenir
+  }
+
+  package "Investigation" {
+    usecase "Traiter les alertes\net les dossiers (BM-07)" as UC_Dossier
+    usecase "Consulter l'explication\nde la décision (BM-06)" as UC_Expliquer
+    usecase "Enregistrer une plainte\nclient (BM-09)" as UC_Plainte
+    usecase "Examiner un comportement\nnouveau (BM-16)" as UC_Nouveau
+  }
+
+  package "Supervision et gouvernance" {
+    usecase "Suivre le tableau de bord\n(BM-14)" as UC_Dashboard
+    usecase "Visualiser la carte\ndes fraudes (BM-13)" as UC_Carte
+    usecase "Comparer Mobile Money\net Visa virtuelle (BM-12)" as UC_Comparer
+    usecase "Consulter le journal\nd'audit (BM-17)" as UC_Audit
+    usecase "Gérer les utilisateurs\net les rôles (BM-18)" as UC_Users
+  }
+
+  package "Ouverture aux partenaires par API" {
+    usecase "Signaler une fraude\nconstatée (BM-19)" as UC_Retour
+    usecase "Superviser le secteur\nsans donnée personnelle\n(BM-20)" as UC_Superviser
+    usecase "Gérer les institutions\net leurs clés d'API\n(BM-21)" as UC_Institutions
+  }
+
+  package "Apprentissage continu" {
+    usecase "Mettre à jour le modèle\nface aux fraudes nouvelles\n(BM-15)" as UC_Reentrainer
+  }
+}
+
+' ------------------------------------------------------------ associations acteurs
+Operateur --> UC_Soumettre
+Client --> UC_Plainte
+UC_Prevenir --> Client
+
+Analyste --> UC_Dossier
+Analyste --> UC_Expliquer
+Analyste --> UC_Plainte
+Analyste --> UC_Nouveau
+Analyste --> UC_Dashboard
+Analyste --> UC_Carte
+
+Superviseur --> UC_Audit
+Superviseur --> UC_Comparer
+Superviseur --> UC_Reentrainer
+
+Admin --> UC_Users
+Admin --> UC_Audit
+Regulateur --> UC_Audit
+Regulateur --> UC_Superviser
+Operateur --> UC_Retour
+Admin --> UC_Institutions
+
+' ------------------------------------------------------------ relations entre cas
+UC_Soumettre ..> UC_Detecter : <<include>>
+UC_Detecter ..> UC_Profil : <<include>>
+UC_Detecter ..> UC_Decider : <<include>>
+UC_Type ..> UC_Detecter : <<extend>>\n(opération signalée)
+UC_IS ..> UC_Detecter : <<extend>>\n(message joint)
+UC_Prevenir ..> UC_Decider : <<extend>>\n(vérifier ou bloquer)
+UC_Dossier ..> UC_Expliquer : <<include>>
+UC_Dossier ..> UC_Decider : <<extend>>\n(alerte -> dossier)
+UC_Plainte ..> UC_Dossier : <<include>>
+UC_Nouveau ..> UC_Reentrainer : <<extend>>\n(verdict = étiquette)
+UC_Plainte ..> UC_Reentrainer : <<extend>>\n(fraude manquée = étiquette)
+UC_Retour ..> UC_Reentrainer : <<extend>>\n(verdict de l institution)
+UC_Soumettre ..> UC_Institutions : <<include>>\n(clé API valide)
+
+note right of UC_Profil
+  58 variables de profilage :
+  montant habituel, fréquence,
+  appareil, lieu, destinataire,
+  horaires (H1, H2)
+end note
+
+note right of UC_Reentrainer
+  Déclenché par : nouvelles étiquettes,
+  dérive, comportements nouveaux,
+  demande du superviseur.
+  Promotion seulement si meilleur (H5)
+end note
+
+note bottom of UC_Audit
+  Journal chaîné par hachage,
+  inaltérable : toute décision
+  et toute action y sont inscrites
+end note
+
+@enduml

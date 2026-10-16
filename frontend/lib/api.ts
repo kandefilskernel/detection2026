@@ -4,7 +4,10 @@
 const TOKEN_KEY = "fraud-rdc-token";
 const USER_KEY = "fraud-rdc-user";
 
-export type User = { id: number; email: string; full_name: string; role: "ANALYSTE" | "SUPERVISEUR" | "ADMIN" };
+export type User = {
+  id: number; email: string; full_name: string; role: "ANALYSTE" | "SUPERVISEUR" | "ADMIN";
+  totp_enabled?: boolean; locked_until?: string | null;
+};
 
 export function getToken(): string | null {
   try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
@@ -37,6 +40,11 @@ export async function api<T = any>(path: string, init: RequestInit = {}): Promis
   });
   if (res.status === 401 && !path.startsWith("/auth/login")) { logout(); throw new ApiError(401, "session expirée"); }
   const body = res.headers.get("content-type")?.includes("json") ? await res.json() : await res.text();
+  // rôle tenu à la double authentification qui ne l'a pas encore activée : direction la page Sécurité
+  if (res.status === 403 && body?.detail === "2FA_SETUP_REQUIRED") {
+    if (window.location.pathname !== "/securite") window.location.href = "/securite?setup=1";
+    throw new ApiError(403, "double authentification à activer");
+  }
   if (!res.ok) {
     const detail = typeof body === "object" && body?.detail ? body.detail : body;
     throw new ApiError(res.status, typeof detail === "string" ? detail : JSON.stringify(detail));
@@ -44,15 +52,21 @@ export async function api<T = any>(path: string, init: RequestInit = {}): Promis
   return body as T;
 }
 
-export async function login(email: string, password: string): Promise<User> {
-  const form = new URLSearchParams({ username: email, password });
+/** Enregistre une session (connexion, ou activation de la 2FA qui délivre un jeton confirmé par code). */
+export function setSession(data: { access_token: string; user: User }) {
+  localStorage.setItem(TOKEN_KEY, data.access_token);
+  localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+  setSessionCookie(true);
+}
+
+/** Connexion. Erreur « TOTP_REQUIRED » : la double authentification est active, redemander avec `otp`. */
+export async function login(email: string, password: string, otp?: string): Promise<{ user: User; setupRequired: boolean }> {
+  const form = new URLSearchParams({ username: email, password, ...(otp ? { otp } : {}) });
   const res = await fetch("/api/auth/login", {
     method: "POST", body: form, headers: { "Content-Type": "application/x-www-form-urlencoded" },
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(res.status, data.detail ?? "connexion impossible");
-  localStorage.setItem(TOKEN_KEY, data.access_token);
-  localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-  setSessionCookie(true);
-  return data.user;
+  setSession(data);
+  return { user: data.user, setupRequired: !!data.two_factor_setup_required };
 }

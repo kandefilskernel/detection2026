@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, CheckCircle2, FolderOpen, MousePointerClick, UserCheck, XCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, FolderOpen, MousePointerClick, ShieldQuestion, UserCheck, XCircle } from "lucide-react";
 import { LiveDot, PageHeader } from "@/components/app-shell";
 import { ActionBadge, FraudTypeBadge, RiskBadge, StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { ProbabilityBar } from "@/components/ui/probability";
 import { Select } from "@/components/ui/select";
 import { api, getUser } from "@/lib/api";
 import { usePolling } from "@/lib/use-polling";
-import { cn, FRAUD_TYPE_HELP, FRAUD_TYPE_LABEL, fmtDate, fmtInt, fmtUsd, RISK_LABEL } from "@/lib/utils";
+import { cn, FRAUD_TYPE_HELP, FRAUD_TYPE_LABEL, fmtDate, fmtInt, fmtPct, fmtUsd, RISK_LABEL } from "@/lib/utils";
 
 const LEVELS = ["", "CRITIQUE", "ELEVE", "MOYEN", "FAIBLE"];
 const STATUSES: [string, string][] = [["OUVERT", "Ouverts"], ["EN_COURS", "En cours"], ["FRAUDE_CONFIRMEE", "Fraudes confirmées"],
@@ -28,6 +28,9 @@ export default function AlertesPage() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const unblock = usePolling<any>("/cases/unblock-requests", 10000);
+  const [decisionNote, setDecisionNote] = useState<Record<number, string>>({});
   const qs = new URLSearchParams({ size: "100", ...(level && { risk_level: level }), ...(status && { status }), ...(fraudType && { fraud_type: fraudType }) }).toString();
   const { data, error, reload } = usePolling<any>(`/cases?${qs}`, 4000);
   const counts: Record<string, number> = data?.counts ?? {};
@@ -35,12 +38,24 @@ export default function AlertesPage() {
 
   async function act(body: Record<string, unknown>) {
     if (!selected) return;
-    setBusy(true); setMsg(null);
+    setBusy(true); setMsg(null); setInfo(null);
     try {
       const updated = await api(`/cases/${selected.id}`, { method: "PATCH", body: JSON.stringify(body) });
-      setSelected(updated); setNote(""); reload();
+      if (updated?.four_eyes) {   // déblocage important : enregistré comme demande, en attente d'un second superviseur
+        setInfo(updated.detail); setSelected(await api(`/cases/${selected.id}`)); unblock.reload();
+      } else setSelected(updated);
+      setNote(""); reload();
     } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
   }
+
+  async function decide(id: number, approve: boolean) {
+    setBusy(true); setMsg(null);
+    try {
+      await api(`/cases/unblock-requests/${id}/decision`, { method: "POST", body: JSON.stringify({ approve, note: decisionNote[id] ?? "" }) });
+      unblock.reload(); reload();
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  }
+  const pending: any[] = unblock.data?.items ?? [];
 
   return (
     <>
@@ -48,6 +63,40 @@ export default function AlertesPage() {
         subtitle="Chaque alerte « à vérifier » ou « bloquée » ouvre un dossier ; votre verdict entraîne le modèle suivant.">
         <LiveDot error={error} />
       </PageHeader>
+
+      {pending.length > 0 && (
+        <Card className="mb-4 border-risk-moyen/40">
+          <CardContent className="pt-5">
+            <div className="mb-3 flex items-center gap-2 text-sm font-semibold"><ShieldQuestion className="h-4 w-4 text-warn" />
+              Déblocages en attente d&apos;un second validateur (quatre yeux)
+              <span className="text-xs font-normal text-muted-foreground">· à partir de {fmtUsd(unblock.data?.min_amount_usd)}</span></div>
+            <ul className="divide-y rounded-xl border">
+              {pending.map((r) => (
+                <li key={r.id} className="grid gap-3 p-3 text-sm lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-center">
+                  <div className="min-w-0">
+                    <div><span className="tabular font-semibold">{fmtUsd(r.amount_usd)}</span>
+                      <Link href={`/transactions/${r.transaction_id}`} className="ml-2 font-mono text-xs text-primary hover:underline">{r.transaction_id}</Link></div>
+                    <div className="truncate text-xs text-muted-foreground">Demandé par {r.requested_by_name} · {fmtDate(r.requested_at)} · « {r.note} »</div>
+                  </div>
+                  {unblock.data?.can_decide && r.requested_by !== me?.id ? (
+                    <>
+                      <input value={decisionNote[r.id] ?? ""} onChange={(e) => setDecisionNote({ ...decisionNote, [r.id]: e.target.value })}
+                        placeholder="Justification de la décision (obligatoire)"
+                        className="w-full rounded-lg border bg-card px-3 py-2 text-xs focus:border-primary/60 focus:outline-none focus:ring-4 focus:ring-primary/15" />
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="success" disabled={busy || (decisionNote[r.id] ?? "").trim().length < 5} onClick={() => decide(r.id, true)}><CheckCircle2 /> Débloquer</Button>
+                        <Button size="sm" variant="outline" disabled={busy || (decisionNote[r.id] ?? "").trim().length < 5} onClick={() => decide(r.id, false)}><XCircle /> Refuser</Button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-foreground lg:col-span-2">{r.requested_by === me?.id ? "Votre demande : un autre superviseur doit la valider." : "Validation réservée aux superviseurs."}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Onglets de statut */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -78,21 +127,22 @@ export default function AlertesPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-5">
-        <Card className="overflow-hidden xl:col-span-3">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Card className="overflow-hidden">
           <div className="max-h-[calc(100vh-260px)] overflow-auto">
             <table className="tbl">
-              <thead><tr><th>#</th><th>Client</th><th>Opération</th><th className="num">Montant</th><th className="num">P(fraude)</th><th>Risque / type</th><th>Statut</th></tr></thead>
+              <thead><tr><th>Dossier</th><th>Opération</th><th className="num">Montant</th><th>Risque</th><th>Type de fraude</th><th>Statut</th></tr></thead>
               <tbody>
                 {(data?.items ?? []).map((c: any) => (
-                  <tr key={c.id} onClick={() => { setSelected(c); setMsg(null); }}
+                  <tr key={c.id} onClick={() => { setSelected(c); setMsg(null); setInfo(null); }}
                     className={cn("cursor-pointer", selected?.id === c.id && "!bg-primary/[.07] shadow-[inset_3px_0_0_hsl(var(--primary))]")}>
-                    <td className="tabular text-xs text-muted-foreground">{c.id}</td>
-                    <td className="font-medium">{c.user_id}</td>
+                    <td className="whitespace-nowrap"><div className="font-medium">{c.user_id}</div>
+                      <div className="tabular text-[11px] text-muted-foreground">n° {c.id}</div></td>
                     <td className="whitespace-nowrap text-xs">{c.tx_type}<div className="text-muted-foreground">{c.channel === "VISA_VIRTUAL" ? "Visa" : "Mobile Money"}</div></td>
                     <td className="num whitespace-nowrap font-medium">{fmtUsd(c.amount_usd)}</td>
-                    <td><ProbabilityBar p={c.fraud_probability} level={c.risk_level} /></td>
-                    <td><div className="flex flex-col items-start gap-1"><RiskBadge level={c.risk_level} /><FraudTypeBadge type={c.fraud_type} /></div></td>
+                    <td className="whitespace-nowrap"><RiskBadge level={c.risk_level} />
+                      <div className="tabular mt-1 text-[11px] text-muted-foreground">{fmtPct(c.fraud_probability)}</div></td>
+                    <td className="max-w-[170px]"><FraudTypeBadge type={c.fraud_type} /></td>
                     <td><StatusBadge status={c.status} /></td>
                   </tr>
                 ))}
@@ -102,7 +152,7 @@ export default function AlertesPage() {
           </div>
         </Card>
 
-        <Card className="xl:sticky xl:top-20 xl:col-span-2 xl:self-start">
+        <Card className="xl:sticky xl:top-20 xl:self-start">
           {!selected ? (
             <EmptyState icon={<MousePointerClick />} title="Aucun dossier sélectionné">Cliquez sur un dossier de la liste pour l&apos;instruire.</EmptyState>
           ) : (
@@ -157,6 +207,7 @@ export default function AlertesPage() {
                     </div>
                   </div>
                 )}
+                {info && <p className="rounded-lg bg-risk-moyen/15 px-3 py-2 text-xs text-warn">{info}</p>}
                 {msg && <p className="rounded-lg bg-risk-critique/10 px-3 py-2 text-xs text-risk-critique">{msg}</p>}
               </CardContent>
             </>

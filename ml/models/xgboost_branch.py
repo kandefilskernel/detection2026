@@ -23,13 +23,15 @@ def build_xgboost_branch(scale_pos_weight: float = 1.0, n_estimators: int = 600,
 
 
 def train_xgboost_branch(X_fit: np.ndarray, y_fit: np.ndarray, X_es: np.ndarray, y_es: np.ndarray,
-                         n_estimators: int = 600, seed: int = 42, record_curves: bool = False) -> xgb.XGBClassifier:
+                         n_estimators: int = 600, seed: int = 42, record_curves: bool = False,
+                         sample_weight: np.ndarray | None = None) -> xgb.XGBClassifier:
     """record_curves=True : évalue aussi l'entraînement à chaque itération (logloss) pour diagnostiquer le
-    surapprentissage ; model.evals_result() donne alors validation_0 (entraînement) et validation_1 (early_stop)."""
+    surapprentissage ; model.evals_result() donne alors validation_0 (entraînement) et validation_1 (early_stop).
+    sample_weight : poids de confiance des étiquettes (verdict d'analyste > étiquette supposée), voir retrain.py."""
     spw = float((y_fit == 0).sum() / max((y_fit == 1).sum(), 1))
     model = build_xgboost_branch(scale_pos_weight=spw, n_estimators=n_estimators, seed=seed, record_curves=record_curves)
     eval_set = [(X_fit, y_fit), (X_es, y_es)] if record_curves else [(X_es, y_es)]
-    model.fit(X_fit, y_fit, eval_set=eval_set, verbose=False)
+    model.fit(X_fit, y_fit, sample_weight=sample_weight, eval_set=eval_set, verbose=False)
     return model
 
 

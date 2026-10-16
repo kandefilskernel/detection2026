@@ -7,6 +7,7 @@ backoffice-api : API des analystes, superviseurs et administrateurs.
     /cases     dossiers d'alerte, verdicts (-> étiquettes pour le réentraînement)
     /reports   KPIs temps réel, séries temporelles, ventilations, performance observée
     /audit     journal inaltérable + vérification de la chaîne de hachage
+    /institutions  institutions partenaires de l'API publique et leurs clés (ADMIN)
 """
 from __future__ import annotations
 
@@ -21,7 +22,8 @@ from shared.utils.metrics import metrics_response
 from app import events
 from app.config import settings
 from app.db import SessionLocal, engine
-from app.routers import audit, auth, cases, nlp, reports, retraining, transactions
+from app.routers import (audit, auth, cases, feedback, institutions, network, nlp, policy, reports, retraining,
+                         transactions)
 from shared.logging.logger_config import configure_logging
 
 configure_logging("backoffice-api")
@@ -32,6 +34,7 @@ async def lifespan(_app: FastAPI):
     events.publisher = events.Publisher(settings.KAFKA_BOOTSTRAP_SERVERS, settings.KAFKA_ENABLED)
     with SessionLocal() as db:
         auth.ensure_bootstrap_admin(db, settings.BOOTSTRAP_ADMIN_EMAIL, settings.BOOTSTRAP_ADMIN_PASSWORD)
+        policy.sync_on_startup(db)
     yield
     events.publisher.flush()
 
@@ -41,7 +44,8 @@ app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in settings.CO
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 Instrumentator(excluded_handlers=["/metrics", "/health"]).instrument(app)
 
-for r in (auth.router, transactions.router, cases.router, reports.router, audit.router, nlp.router, retraining.router):
+for r in (auth.router, transactions.router, cases.router, reports.router, audit.router, nlp.router, retraining.router,
+          institutions.router, network.router, feedback.router, policy.router):
     app.include_router(r)
 
 

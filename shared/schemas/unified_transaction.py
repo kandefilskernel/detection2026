@@ -83,6 +83,8 @@ class UnifiedTransaction(BaseModel):
     location_province: str
     # Motif / référence saisi par l'émetteur (optionnel) : analysé par le NLP, jamais stocké en clair.
     memo: str | None = Field(None, max_length=500)
+    # Institution émettrice : fixée par l'API d'intégration d'après la clé d'API, jamais par le client.
+    institution: str | None = Field(None, max_length=32)
 
     @field_validator(*ID_FIELDS, mode="before")
     @classmethod

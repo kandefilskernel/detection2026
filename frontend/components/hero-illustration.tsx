@@ -1,14 +1,14 @@
-import { BellRing, ShieldAlert, Signal, Wifi } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Signal, Wifi } from "lucide-react";
 
-/** Téléphone Mobile Money (alerte de fraude) + carte Visa virtuelle, pour la page de connexion. Données fictives. */
-export function HeroIllustration() {
+import { cn } from "@/lib/utils";
+
+/** Illustrations de la page de connexion (visuels fictifs : montants, numéros et titulaire inventés). */
+
+/** Téléphone avec un portefeuille Mobile Money (M-Pesa) et une alerte de fraude. */
+export function MobileMoneyPhone({ className }: { className?: string }) {
   return (
-    <div className="relative h-[460px] w-[330px] select-none" aria-hidden>
-      {/* Halo */}
-      <div className="absolute left-10 top-16 h-72 w-72 rounded-full bg-[hsl(221_83%_53%)] opacity-40 blur-[90px]" />
-
-      {/* ---------------------------------------------------------------- téléphone */}
-      <div className="absolute right-0 top-0 h-[440px] w-[220px] rotate-[4deg] rounded-[2.4rem] bg-gradient-to-b from-slate-700 to-slate-900 p-[7px] shadow-[0_40px_80px_-20px_rgba(0,0,0,.7),inset_0_0_0_1px_rgba(255,255,255,.12)]">
+    <div className={cn("relative select-none", className)} aria-hidden>
+      <div className="h-[440px] w-[220px] rounded-[2.4rem] bg-gradient-to-b from-slate-700 to-slate-900 p-[7px] shadow-[0_40px_80px_-20px_rgba(0,0,0,.7),inset_0_0_0_1px_rgba(255,255,255,.12)]">
         <div className="relative h-full w-full overflow-hidden rounded-[2rem] bg-[#0b1020]">
           {/* encoche */}
           <div className="absolute left-1/2 top-2 z-10 h-5 w-20 -translate-x-1/2 rounded-full bg-black" />
@@ -18,8 +18,10 @@ export function HeroIllustration() {
             <span className="flex items-center gap-1"><Signal className="h-2.5 w-2.5" /><Wifi className="h-2.5 w-2.5" /><span className="h-2 w-4 rounded-[2px] border border-white/70 p-px"><span className="block h-full w-3/4 rounded-[1px] bg-white/80" /></span></span>
           </div>
           {/* en-tête de l'application */}
-          <div className="mx-3 mt-5 rounded-2xl bg-gradient-to-br from-[hsl(221_83%_55%)] to-[hsl(262_83%_55%)] p-3.5 text-white">
-            <div className="text-[9px] uppercase tracking-wider text-white/70">Mobile Money · Solde</div>
+          <div className="mx-3 mt-5 rounded-2xl bg-gradient-to-br from-[#e11d2e] to-[#9f1239] p-3.5 text-white">
+            <div className="flex items-center justify-between text-[9px] uppercase tracking-wider text-white/80">
+              <span className="font-bold tracking-[.12em] text-white">M-Pesa</span><span>Solde</span>
+            </div>
             <div className="mt-0.5 text-xl font-semibold tracking-tight">248,50 $</div>
             <div className="mt-2.5 grid grid-cols-3 gap-1.5 text-center text-[8px] text-white/85">
               {["Envoyer", "Retrait", "Payer"].map((l) => <div key={l} className="rounded-lg bg-white/15 py-1.5">{l}</div>)}
@@ -51,8 +53,16 @@ export function HeroIllustration() {
         </div>
       </div>
 
+    </div>
+  );
+}
+
+/** Carte Visa virtuelle, avec la confirmation d'un achat sécurisé. */
+export function VirtualCard({ className }: { className?: string }) {
+  return (
+    <div className={cn("relative select-none", className)} aria-hidden>
       {/* ---------------------------------------------------------------- carte virtuelle */}
-      <div className="absolute left-0 top-[150px] z-10 aspect-[1.586] w-[235px] -rotate-[9deg] overflow-hidden rounded-2xl bg-gradient-to-br from-[#1e3a8a] via-[#4338ca] to-[#7c3aed] p-4 text-white shadow-[0_30px_60px_-15px_rgba(0,0,0,.65),inset_0_0_0_1px_rgba(255,255,255,.18)]">
+      <div className="relative aspect-[1.586] w-[300px] overflow-hidden rounded-2xl bg-gradient-to-br from-[#1e3a8a] via-[#4338ca] to-[#7c3aed] p-4 text-white shadow-[0_30px_60px_-15px_rgba(0,0,0,.65),inset_0_0_0_1px_rgba(255,255,255,.18)]">
         <div className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-white/10" />
         <div className="absolute -bottom-16 -left-8 h-40 w-40 rounded-full bg-white/[.06]" />
         <div className="relative flex items-start justify-between">
@@ -62,7 +72,7 @@ export function HeroIllustration() {
         <div className="relative mt-3 h-6 w-8 rounded-md bg-gradient-to-br from-amber-200 to-amber-400 shadow-inner">
           <div className="absolute inset-x-1 top-1/2 h-px bg-amber-600/50" /><div className="absolute inset-y-1 left-1/2 w-px bg-amber-600/50" />
         </div>
-        <div className="relative mt-3 font-mono text-[13px] tracking-[.16em]">•••• •••• •••• 4821</div>
+        <div className="relative mt-3 font-mono text-[16px] tracking-[.16em]">•••• •••• •••• 4821</div>
         <div className="relative mt-2 flex items-end justify-between">
           <div>
             <div className="text-[7px] uppercase tracking-wider text-white/60">Titulaire</div>
@@ -76,12 +86,11 @@ export function HeroIllustration() {
         </div>
       </div>
 
-      {/* ---------------------------------------------------------------- pastille de score */}
-      <div className="absolute left-0 top-10 z-20 flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/80 px-3 py-2 text-white shadow-xl backdrop-blur-md">
-        <div className="grid h-7 w-7 place-items-center rounded-lg bg-red-500/20 text-red-400"><BellRing className="h-3.5 w-3.5" /></div>
+      <div className="absolute -bottom-12 left-6 right-6 flex items-center gap-2 rounded-xl border bg-card px-3 py-2 text-foreground shadow-xl">
+        <div className="grid h-7 w-7 place-items-center rounded-lg bg-emerald-500/15 text-emerald-600"><ShieldCheck className="h-3.5 w-3.5" /></div>
         <div>
-          <div className="text-[10px] font-semibold leading-tight">Risque critique · 94 %</div>
-          <div className="text-[9px] text-white/60">décision en 21 ms</div>
+          <div className="text-[11px] font-semibold leading-tight">Achat en ligne vérifié</div>
+          <div className="text-[10px] text-muted-foreground">profil habituel du titulaire</div>
         </div>
       </div>
     </div>

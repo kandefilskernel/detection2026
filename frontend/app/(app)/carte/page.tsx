@@ -84,7 +84,7 @@ export default function CartePage() {
         <Segmented value={minutes} onChange={setMinutes} options={WINDOWS} />
       </PageHeader>
 
-      <div className="mb-4 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label="Fraudes détectées" icon={<ShieldAlert />} tone="danger" value={data ? fmtInt(total) : undefined}
           hint={data && `${fmtInt(s.blocked)} bloquées · ${fmtInt(total - s.blocked)} à vérifier · ${fmtInt(s.confirmed)} confirmées`} />
         <Stat label="Montant exposé" icon={<Banknote />} tone="warn" value={data ? fmtUsd(s.amount) : undefined}

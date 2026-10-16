@@ -30,7 +30,7 @@ def to_row(e: dict) -> dict:
         "latency_ms": d["latency_ms"], "degraded": d["degraded"],
         "fraud_type": d.get("fraud_type"), "fraud_type_probability": d.get("fraud_type_probability"),
         "explanation": {**e["explanation"], "fraud_type_candidates": d.get("fraud_type_candidates") or []},
-        "features": e["features"],
+        "features": e["features"], "institution": t.get("institution"),
     }
 
 

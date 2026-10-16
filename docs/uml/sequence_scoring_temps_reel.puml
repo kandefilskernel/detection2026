@@ -1,0 +1,88 @@
+@startuml sequence_scoring_temps_reel
+' Diagramme de séquence : scoring d'une transaction en temps réel (de l'opérateur à l'alerte)
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam sequenceMessageAlign left
+autonumber
+
+title Séquence — Scoring d'une transaction en temps réel
+
+actor "Client" as Client
+participant "Opérateur\n(Vodacom, Airtel,\nOrange, Visa)" as Op
+participant "Couche\nd'intégration" as Integ
+participant "Service\nde scoring" as Sc
+database "Redis\n(feature store)" as Redis
+participant "Lois\nphysiques" as Phys
+participant "Modèle\nhybride" as Model
+participant "Analyse NLP" as Nlp
+participant "Politique\nde décision" as Dec
+queue "Kafka" as Kafka
+participant "Workers\n(persister, alerter,\nauditor)" as Wk
+database "PostgreSQL" as Pg
+
+Client -> Op : initie une opération\n(transfert, retrait, paiement)
+Op -> Integ : POST /ingest/v1/transactions/{operateur}\n(format natif)
+activate Integ
+Integ -> Integ : adaptateur.to_unified()\nvalidation + conversion en USD
+alt format invalide
+  Integ --> Op : 422 AdapterError
+else format valide
+  Integ -> Sc : POST /v1/score (transaction unifiée)
+  activate Sc
+
+  Sc -> Redis : lire résultat fs:res:{user}:{tx}
+  alt déjà notée (rejeu, relance)
+    Redis --> Sc : résultat existant
+    Sc --> Integ : même décision (idempotence)
+  else nouvelle transaction
+    Sc -> Redis : verrou utilisateur + profil
+    Redis --> Sc : état comportemental du client
+    Sc -> Sc : extraire les 58 variables\n(montant, fréquence, appareil,\nlieu, destinataire, horaires)
+    Sc -> Phys : evaluate(province précédente,\nprovince, délai, montant, solde)
+    Phys --> Sc : violations (déplacement\nimpossible, conservation)
+    Sc -> Model : score(x normalisé, historique)
+    activate Model
+    Model -> Model : XGBoost + LSTM-attention\n+ autoencodeur → méta-apprenant
+    Model --> Sc : probabilité, type de fraude,\nSHAP, erreur de reconstruction
+    deactivate Model
+    opt message joint
+      Sc -> Nlp : analyze(message)
+      Nlp --> Sc : sentiment, score\nd'ingénierie sociale
+    end
+    Sc -> Dec : decide(p, montant, canal,\nvariables, physique, texte)
+    Dec --> Sc : APPROVE / VERIFY / BLOCK\n+ niveau de risque + motif
+    Sc -> Redis : mettre à jour le profil\n+ mémoriser le résultat (30 min)
+    Sc -> Kafka : publier transactions.scored
+    opt VERIFY ou BLOCK
+      Sc -> Kafka : publier fraud.alerts
+    end
+    Sc --> Integ : décision (latence < 100 ms)
+  end
+  deactivate Sc
+
+  alt service de scoring indisponible
+    Integ -> Integ : relances bornées
+    Integ --> Op : mode dégradé (règles de repli)
+  else
+    Integ --> Op : décision au format natif
+  end
+end
+deactivate Integ
+
+alt APPROVE
+  Op --> Client : opération exécutée
+else VERIFY
+  Op --> Client : demande de confirmation (OTP / appel)
+else BLOCK
+  Op --> Client : opération suspendue
+end
+
+== Traitement asynchrone ==
+Kafka -> Wk : transactions.scored
+Wk -> Pg : persister scored_transactions
+Kafka -> Wk : fraud.alerts
+Wk -> Pg : ouvrir un dossier (cases)
+Wk -> Client : SMS de prévention
+Wk -> Pg : inscrire au journal d'audit\n(chaîné par hachage)
+
+@enduml

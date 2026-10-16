@@ -1,0 +1,84 @@
+@startuml sequence_reentrainement
+' Diagramme de séquence : réentraînement champion / challenger (apprentissage continu)
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam sequenceMessageAlign left
+autonumber
+
+title Séquence — Réentraînement champion / challenger
+
+actor "Analyste" as An
+actor "Superviseur" as Sup
+participant "API\nback-office" as Bo
+database "PostgreSQL" as Pg
+participant "Moniteur\nde dérive" as Drift
+participant "Prometheus" as Prom
+participant "Planificateur" as Sched
+participant "Entraînement\n(retrain)" as Tr
+participant "Registre\nMLflow" as Ml
+collections "Artefacts\ndu modèle" as Art
+participant "Service\nde scoring" as Sc
+
+== Collecte des signaux ==
+An -> Bo : verdict sur un dossier\n(fraude / légitime) ou plainte client
+Bo -> Pg : étiqueter scored_transactions\n(label, labeled_at)
+loop toutes les 5 minutes
+  Drift -> Pg : fenêtre des transactions récentes
+  Drift -> Drift : KS / PSI par variable\n+ taux de nouveauté (autoencodeur)
+  Drift -> Prom : exposer /metrics
+end
+
+== Décision ==
+loop cycle périodique
+  Sched -> Pg : nouvelles étiquettes
+  Sched -> Prom : dérive, nouveauté
+  Sched -> Sched : decide(signaux, config)
+  Sched -> Pg : enregistrer retrain_state
+  alt seuils non atteints ou délai de carence actif
+    Sched -> Sched : attendre le prochain cycle
+  else réentraînement justifié
+    Sched -> Pg : créer retrain_events (AUTO, motifs)
+    Sched -> Tr : run_training()
+  end
+end
+
+opt demande manuelle
+  Sup -> Bo : POST /retraining/trigger
+  Bo -> Pg : retrain_events (MANUEL, DEMANDEE)
+  Sched -> Pg : prendre en charge l'événement
+  Sched -> Tr : run_training()
+end
+
+== Entraînement du challenger ==
+activate Tr
+Tr -> Pg : historique + données de production étiquetées
+Tr -> Tr : découpage temporel\n(entraînement / validation / test)
+Tr -> Tr : entraîner le challenger\n(XGBoost, LSTM, autoencodeur, méta)
+Tr -> Tr : diagnostic de surapprentissage\n(écart PR-AUC entraînement − validation)
+Tr -> Tr : porte de détection\n(rappel par type, taux de faux positifs)
+Tr -> Tr : comparer au champion\nsur la même période de test
+
+alt surapprentissage, porte échouée ou pas meilleur
+  Tr -> Pg : model_registry (REJETE)
+  Tr -> Ml : métriques du challenger rejeté
+  Tr --> Sched : refusé
+else challenger meilleur
+  Tr -> Art : promouvoir (écriture atomique)\nancien champion archivé
+  Tr -> Pg : model_registry (CHAMPION / ARCHIVE)
+  Tr -> Ml : version + métriques
+  Tr --> Sched : promu
+end
+deactivate Tr
+Sched -> Pg : clôturer retrain_events (statut, détail)
+
+== Rechargement à chaud ==
+Sc -> Art : détecter la nouvelle version
+Sc -> Sc : contrôle de cohérence\n(transactions de référence)
+alt contrôle réussi
+  Sc -> Sc : basculer sur le nouveau modèle\nsans interruption
+else contrôle échoué
+  Sc -> Sc : conserver l'ancien modèle
+  Sc -> Prom : alerte NouveauModeleRefuse
+end
+
+@enduml

@@ -32,6 +32,10 @@ export default function UsersPage() {
   async function toggle(u: any) {
     await api(`/users/${u.id}`, { method: "PATCH", body: JSON.stringify({ is_active: !u.is_active }) }); reload();
   }
+  async function patchUser(u: any, body: Record<string, boolean>) {
+    await api(`/users/${u.id}`, { method: "PATCH", body: JSON.stringify(body) }); reload();
+  }
+  const locked = (u: any) => !!u.locked_until && new Date(u.locked_until).getTime() > Date.now();
 
   return (
     <>
@@ -40,7 +44,7 @@ export default function UsersPage() {
         <Card className="overflow-hidden lg:col-span-2">
           <div className="overflow-x-auto">
             <table className="tbl">
-              <thead><tr><th>Utilisateur</th><th>Rôle</th><th>État</th><th /></tr></thead>
+              <thead><tr><th>Utilisateur</th><th>Rôle</th><th>État</th><th>2FA</th><th /></tr></thead>
               <tbody>
                 {(data ?? []).map((u) => (
                   <tr key={u.id} className={cn(!u.is_active && "opacity-60")}>
@@ -51,10 +55,18 @@ export default function UsersPage() {
                       </div>
                     </td>
                     <td><Pill tone={ROLE_TONE[u.role as keyof typeof ROLE_TONE]} dot={false}>{ROLES.find(([r]) => r === u.role)?.[1]}</Pill></td>
-                    <td><Pill tone={u.is_active ? "faible" : "neutral"}>{u.is_active ? "Actif" : "Désactivé"}</Pill></td>
+                    <td><div className="flex flex-wrap gap-1">
+                      <Pill tone={u.is_active ? "faible" : "neutral"}>{u.is_active ? "Actif" : "Désactivé"}</Pill>
+                      {locked(u) && <Pill tone="critique">Verrouillé</Pill>}</div></td>
+                    <td><Pill tone={u.totp_enabled ? "faible" : u.role === "ANALYSTE" ? "neutral" : "moyen"} dot={false}>{u.totp_enabled ? "Activée" : "Non activée"}</Pill></td>
                     <td className="text-right">
                       {isAdmin && u.id !== me?.id && (
-                        <Button size="sm" variant={u.is_active ? "outline" : "default"} onClick={() => toggle(u)}>{u.is_active ? "Désactiver" : "Réactiver"}</Button>
+                        <div className="flex flex-wrap justify-end gap-1.5">
+                          {locked(u) && <Button size="sm" variant="outline" onClick={() => patchUser(u, { unlock: true })}>Déverrouiller</Button>}
+                          {u.totp_enabled && <Button size="sm" variant="outline" title="Téléphone perdu : l'utilisateur reconfigurera sa 2FA"
+                            onClick={() => patchUser(u, { reset_totp: true })}>Réinitialiser 2FA</Button>}
+                          <Button size="sm" variant={u.is_active ? "outline" : "default"} onClick={() => toggle(u)}>{u.is_active ? "Désactiver" : "Réactiver"}</Button>
+                        </div>
                       )}
                     </td>
                   </tr>

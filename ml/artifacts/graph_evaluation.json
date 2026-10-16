@@ -1,0 +1,287 @@
+{
+  "label_delay_days": 7,
+  "val_start": "2023-03-02 10:00:09",
+  "test_start": "2024-12-13 10:40:11",
+  "n_test": 183240,
+  "n_test_fraud": 2437,
+  "truth_sizes": {
+    "W": 400,
+    "D": 150,
+    "A": 24,
+    "U": 7
+  },
+  "etiquettes_differees": {
+    "transactions": {
+      "threshold_from_validation": 0.5933203691195225,
+      "target_fpr": 0.005,
+      "network_alone": {
+        "average_precision": 0.9758763755536329,
+        "roc_auc": 0.9895657443343113,
+        "recall": 0.9737382027082478,
+        "false_alert_rate": 0.004596162674291909,
+        "precision": 0.7406367041198502,
+        "n_alerts": 3204
+      },
+      "model_alone": {
+        "average_precision": 0.9955338346462687,
+        "recall": 0.9778416085350842,
+        "false_alert_rate": 0.0006747675646974885,
+        "precision": 0.9512974051896208,
+        "n_alerts": 2505
+      },
+      "model_or_network": {
+        "recall": 1.0,
+        "false_alert_rate": 0.005270930238989397,
+        "precision": 0.7188790560471976,
+        "n_alerts": 3390
+      },
+      "frauds_rescued": 54,
+      "extra_false_alerts": 831,
+      "by_fraud_type": {
+        "ACCOUNT_TAKEOVER": {
+          "n": 406,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        },
+        "AGENT_FRAUD": {
+          "n": 181,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        },
+        "CARD_TESTING": {
+          "n": 81,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        },
+        "CNP_FRAUD": {
+          "n": 131,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        },
+        "SIM_SWAP": {
+          "n": 623,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        },
+        "SMURFING": {
+          "n": 303,
+          "model": 0.9867986798679867,
+          "hybrid_or_network": 1.0,
+          "rescued": 4
+        },
+        "SOCIAL_ENGINEERING": {
+          "n": 630,
+          "model": 0.9206349206349206,
+          "hybrid_or_network": 1.0,
+          "rescued": 50
+        },
+        "TOPUP_DRAIN": {
+          "n": 82,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        }
+      }
+    }
+  },
+  "entites_fin_de_test": {
+    "n_shared_entities": 14970,
+    "n_true_shared": 574,
+    "entities": {
+      "nb_comptes_distincts (variable déjà dans le modèle)": {
+        "p@25": 0.0,
+        "p@50": 0.02,
+        "p@100": 0.02,
+        "p@200": 0.07
+      },
+      "risque_direct": {
+        "p@25": 0.68,
+        "p@50": 0.7,
+        "p@100": 0.78,
+        "p@200": 0.88
+      },
+      "score_reseau (direct + propagé)": {
+        "p@25": 0.68,
+        "p@50": 0.72,
+        "p@100": 0.79,
+        "p@200": 0.88
+      }
+    },
+    "mule_accounts_in_top10_exposure": 1
+  },
+  "reseaux_fin_de_test": {
+    "n_rings": 1,
+    "largest_ring_accounts": 467,
+    "n_entities_in_rings": 582,
+    "purity_entities": 0.9570446735395189,
+    "coverage_true_shared_entities": 0.9703832752613241,
+    "top5": [
+      {
+        "id": "D:DEV473d95b1505d",
+        "score": 0.9701,
+        "n_accounts": 467,
+        "n_entities": 582,
+        "entity_kinds": {
+          "agent": 7,
+          "appareil": 174,
+          "marchand": 1,
+          "portefeuille": 400
+        },
+        "expected_frauds": 11144.0
+      }
+    ]
+  },
+  "etiquettes_differees_plus_scores_modele": {
+    "transactions": {
+      "threshold_from_validation": 0.5933203691195225,
+      "target_fpr": 0.005,
+      "network_alone": {
+        "average_precision": 0.9758728708281426,
+        "roc_auc": 0.9895519568471579,
+        "recall": 0.9737382027082478,
+        "false_alert_rate": 0.004579570029258364,
+        "precision": 0.7413308341143393,
+        "n_alerts": 3201
+      },
+      "model_alone": {
+        "average_precision": 0.9955338346462687,
+        "recall": 0.9778416085350842,
+        "false_alert_rate": 0.0006747675646974885,
+        "precision": 0.9512974051896208,
+        "n_alerts": 2505
+      },
+      "model_or_network": {
+        "recall": 1.0,
+        "false_alert_rate": 0.005254337593955853,
+        "precision": 0.7195157956894006,
+        "n_alerts": 3387
+      },
+      "frauds_rescued": 54,
+      "extra_false_alerts": 828,
+      "by_fraud_type": {
+        "ACCOUNT_TAKEOVER": {
+          "n": 406,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        },
+        "AGENT_FRAUD": {
+          "n": 181,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        },
+        "CARD_TESTING": {
+          "n": 81,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        },
+        "CNP_FRAUD": {
+          "n": 131,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        },
+        "SIM_SWAP": {
+          "n": 623,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        },
+        "SMURFING": {
+          "n": 303,
+          "model": 0.9867986798679867,
+          "hybrid_or_network": 1.0,
+          "rescued": 4
+        },
+        "SOCIAL_ENGINEERING": {
+          "n": 630,
+          "model": 0.9206349206349206,
+          "hybrid_or_network": 1.0,
+          "rescued": 50
+        },
+        "TOPUP_DRAIN": {
+          "n": 82,
+          "model": 1.0,
+          "hybrid_or_network": 1.0,
+          "rescued": 0
+        }
+      }
+    }
+  },
+  "entites_sans_etiquette (scores du modèle seulement)": {
+    "n_shared_entities": 5362,
+    "n_true_shared": 489,
+    "entities": {
+      "nb_comptes_distincts (variable déjà dans le modèle)": {
+        "p@25": 0.0,
+        "p@50": 0.0,
+        "p@100": 0.0,
+        "p@200": 0.0
+      },
+      "risque_direct": {
+        "p@25": 0.96,
+        "p@50": 0.94,
+        "p@100": 0.9,
+        "p@200": 0.925
+      },
+      "score_reseau (direct + propagé)": {
+        "p@25": 0.96,
+        "p@50": 0.94,
+        "p@100": 0.93,
+        "p@200": 0.93
+      }
+    },
+    "mule_accounts_in_top10_exposure": 5
+  },
+  "reseaux_30_derniers_jours": {
+    "days": 30,
+    "n_tx": 15844,
+    "n_rings": 3,
+    "largest_ring_accounts": 12,
+    "n_entities_in_rings": 16,
+    "purity_entities": 1.0,
+    "coverage_true_shared_entities": 0.4444444444444444,
+    "top5": [
+      {
+        "id": "D:DEV23a676f954f0",
+        "score": 0.7454,
+        "n_accounts": 5,
+        "n_entities": 2,
+        "entity_kinds": {
+          "appareil": 1,
+          "portefeuille": 1
+        },
+        "expected_frauds": 11.87
+      },
+      {
+        "id": "W:243767110555",
+        "score": 0.6813,
+        "n_accounts": 12,
+        "n_entities": 12,
+        "entity_kinds": {
+          "portefeuille": 12
+        },
+        "expected_frauds": 29.53
+      },
+      {
+        "id": "D:DEV4fa648db6232",
+        "score": 0.6098,
+        "n_accounts": 4,
+        "n_entities": 2,
+        "entity_kinds": {
+          "appareil": 1,
+          "portefeuille": 1
+        },
+        "expected_frauds": 6.94
+      }
+    ]
+  },
+  "duration_s": 696.8
+}

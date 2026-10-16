@@ -1,11 +1,14 @@
 """
-integration-layer : point d'entrée des opérateurs.
+integration-layer : API publique du système, pour toute institution partenaire (opérateurs Mobile Money, banques,
+émetteurs de cartes, régulateur). Documentation interactive : /v1/docs.
 
-    POST /v1/transactions/{provider}   provider ∈ vodacom | airtel | orange | visa
-        1. authentifie l'opérateur (X-API-Key propre à chaque opérateur) ;
-        2. convertit le message propriétaire vers le schéma pivot (Adapter) ;
+    POST /v1/transactions              transaction au format commun (toute institution)
+    POST /v1/transactions/{provider}   format natif d'un opérateur : vodacom | airtel | orange | visa
+        1. authentifie l'institution (X-API-Key, voir app/partners.py) ;
+        2. convertit le message vers le schéma pivot (adaptateur) et le rattache à l'institution ;
         3. demande la décision au scoring-service (appel synchrone) ;
-        4. renvoie la décision à l'opérateur, qui exécute, fait vérifier ou refuse.
+        4. renvoie la décision, que l'institution applique : exécuter, faire vérifier ou refuser.
+    GET  /v1/transactions/{id}, POST /v1/feedback, GET /v1/stats, GET /v1/supervision/*   (app/partners.py)
 
 Si le scoring est indisponible, la politique de repli est configurable (FAIL_OPEN) :
 laisser passer (continuité de service) ou exiger une vérification (prudence).
@@ -18,18 +21,21 @@ import time
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI, Header, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from prometheus_client import Counter, Histogram
 from pydantic import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from shared.utils.metrics import metrics_response
+from app import partners as partners_mod
 from app.adapters.airtel_adapter import AirtelAdapter
 from app.adapters.base_adapter import AdapterError
 from app.adapters.orange_adapter import OrangeAdapter
 from app.adapters.vodacom_adapter import VodacomAdapter
 from app.adapters.visa_virtual_adapter import VisaVirtualAdapter
+from app.partners import Principal, require_scope
 from shared.logging.logger_config import configure_logging
+from shared.schemas.unified_transaction import UnifiedTransaction
 
 configure_logging("integration-layer")
 
@@ -50,6 +56,8 @@ class Settings(BaseSettings):
     OPERATOR_API_KEYS: str = ("vodacom:dev-vodacom-key,airtel:dev-airtel-key,"
                               "orange:dev-orange-key,visa:dev-visa-key")
     FAIL_OPEN: bool = False
+    # Kafka : retours des institutions (étiquettes) et journal d'audit ; vide = journalisation locale seulement
+    KAFKA_BOOTSTRAP_SERVERS: str = ""
 
 
 settings = Settings()
@@ -69,11 +77,17 @@ state: dict = {}
 async def lifespan(_app: FastAPI):
     state["http"] = httpx.AsyncClient(base_url=settings.SCORING_URL, timeout=settings.SCORING_TIMEOUT_S,
                                       limits=httpx.Limits(max_connections=200, max_keepalive_connections=50))
+    partners_mod.partners = partners_mod.Partners(KEYS, settings.KAFKA_BOOTSTRAP_SERVERS or None)
     yield
     await state["http"].aclose()
+    partners_mod.partners.close()
 
 
-app = FastAPI(title="Integration layer — opérateurs Mobile Money & Visa", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="API partenaires — détection de fraude Mobile Money et cartes virtuelles (RDC)", version="1.1.0",
+              description="Scoring en temps réel, retour des fraudes constatées et supervision. "
+                          "Authentification : en-tête X-API-Key délivré par l'administrateur du système.",
+              lifespan=lifespan, docs_url="/v1/docs", redoc_url="/v1/redoc", openapi_url="/v1/openapi.json")
+app.include_router(partners_mod.router)
 
 
 def _transient(e: Exception) -> bool:
@@ -101,21 +115,9 @@ async def post_with_retries(tx) -> httpx.Response:
             await asyncio.sleep(pause)
 
 
-@app.post("/v1/transactions/{provider}")
-async def ingest(provider: str, request: Request, x_api_key: str = Header(..., alias="X-API-Key")):
+async def decide(tx: UnifiedTransaction, provider: str) -> dict:
+    """Décision du scoring, ou politique de repli s'il est indisponible."""
     t0 = time.perf_counter()
-    adapter = ADAPTERS.get(provider)
-    if adapter is None:
-        raise HTTPException(404, f"opérateur inconnu : {provider}")
-    if KEYS.get(x_api_key) != provider:
-        REQUESTS.labels(provider, "unauthorized").inc()
-        raise HTTPException(401, "clé d'API opérateur invalide")
-    try:
-        tx = adapter.to_unified(await request.json())
-    except (AdapterError, ValidationError, ValueError) as e:
-        REQUESTS.labels(provider, "invalid").inc()
-        raise HTTPException(422, f"message {provider} invalide : {e}")
-
     try:
         r = await post_with_retries(tx)
         result = r.json()
@@ -128,6 +130,49 @@ async def ingest(provider: str, request: Request, x_api_key: str = Header(..., a
                   "fraud_probability": None}
     LATENCY.labels(provider).observe(time.perf_counter() - t0)
     result["provider"] = provider
+    result["institution"] = tx.institution
+    return result
+
+
+@app.post("/v1/transactions", summary="Scorer une transaction au format commun")
+async def ingest_unified(request: Request, principal: Principal = Depends(require_scope("transactions"))):
+    """Format commun (schéma pivot) : toute institution peut l'utiliser sans adaptateur spécifique. Le champ
+    `institution` est fixé par le serveur d'après la clé d'API."""
+    t0 = time.perf_counter()
+    try:
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            raise ValueError("objet JSON attendu")
+        payload = {**payload, "institution": principal.code}
+        if payload.get("amount_usd") is None and payload.get("currency") in ("USD", "CDF") and payload.get("amount"):
+            # montant en USD facultatif : converti au taux de l'année de l'opération, comme les adaptateurs
+            when = ADAPTERS["vodacom"].parse_time(str(payload.get("timestamp")))
+            payload["amount_usd"] = round(ADAPTERS["vodacom"].to_usd(float(payload["amount"]), payload["currency"], when), 4)
+        tx = UnifiedTransaction.model_validate(payload)
+    except (ValidationError, ValueError, AdapterError) as e:
+        REQUESTS.labels("unified", "invalid").inc()
+        raise HTTPException(422, f"transaction invalide : {e}")
+    result = await decide(tx, "unified")
+    result["end_to_end_ms"] = round((time.perf_counter() - t0) * 1000, 2)
+    return result
+
+
+@app.post("/v1/transactions/{provider}", summary="Scorer une transaction au format natif d'un opérateur")
+async def ingest(provider: str, request: Request, principal: Principal = Depends(require_scope("transactions"))):
+    t0 = time.perf_counter()
+    adapter = ADAPTERS.get(provider)
+    if adapter is None:
+        raise HTTPException(404, f"format inconnu : {provider} (formats : {', '.join(ADAPTERS)})")
+    if provider not in principal.providers:
+        REQUESTS.labels(provider, "unauthorized").inc()
+        raise HTTPException(403, f"le format {provider} n'est pas autorisé pour l'institution {principal.code}")
+    try:
+        tx = adapter.to_unified(await request.json())
+    except (AdapterError, ValidationError, ValueError) as e:
+        REQUESTS.labels(provider, "invalid").inc()
+        raise HTTPException(422, f"message {provider} invalide : {e}")
+    tx = tx.model_copy(update={"institution": principal.code})
+    result = await decide(tx, provider)
     result["end_to_end_ms"] = round((time.perf_counter() - t0) * 1000, 2)
     return result
 
