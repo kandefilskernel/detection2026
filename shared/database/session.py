@@ -16,5 +16,5 @@ def database_url() -> str:
 
 
 def make_session_factory(url: str | None = None, **kw):
-    engine = create_engine(url or database_url(), pool_pre_ping=True, pool_size=10, max_overflow=10, **kw)
+    engine = create_engine(url or database_url(), **{"pool_pre_ping": True, "pool_size": 10, "max_overflow": 10, **kw})
     return engine, sessionmaker(bind=engine, expire_on_commit=False)

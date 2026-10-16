@@ -1,20 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { ArrowRight, Eye, EyeOff, Gauge, Lock, Map as MapIcon, Radar } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock } from "lucide-react";
 import { Logo } from "@/components/app-shell";
 import { DrcFlag } from "@/components/drc-flag";
-import { HeroIllustration } from "@/components/hero-illustration";
+import { MobileMoneyPhone, VirtualCard } from "@/components/hero-illustration";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/select";
 import { login } from "@/lib/api";
-
-const FEATURES = [
-  { icon: Gauge, title: "Décision en temps réel", text: "Chaque transaction est scorée en quelques dizaines de millisecondes." },
-  { icon: Radar, title: "Modèle hybride explicable", text: "XGBoost, LSTM-attention et autoencodeur, avec l'explication de chaque alerte." },
-  { icon: MapIcon, title: "Vue nationale", text: "Vodacom, Airtel, Orange et Visa virtuelle, sur les 26 provinces." },
-];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,70 +18,57 @@ export default function LoginPage() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [needOtp, setNeedOtp] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true); setError(null);
-    try { await login(email, password); const next = new URLSearchParams(window.location.search).get("next");
-      router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : "/"); }
-    catch (err: any) { setError(err.message); }
-    finally { setBusy(false); }
+    try {
+      const { setupRequired } = await login(email, password, needOtp ? otp : undefined);
+      const next = new URLSearchParams(window.location.search).get("next");
+      router.replace(setupRequired ? "/securite?setup=1" : next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
+    } catch (err: any) {
+      if (err.message === "TOTP_REQUIRED") { setNeedOtp(true); setOtp(""); }
+      else setError(err.message);
+    } finally { setBusy(false); }
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
-      {/* Panneau de marque */}
-      <section className="relative hidden overflow-hidden bg-sidebar p-12 text-white lg:flex lg:flex-col">
-        <div aria-hidden className="absolute inset-0">
-          <div className="absolute -left-32 -top-32 h-[520px] w-[520px] rounded-full bg-[hsl(221_83%_53%)] opacity-30 blur-[120px]" />
-          <div className="absolute -bottom-40 right-[-80px] h-[480px] w-[480px] rounded-full bg-[hsl(262_83%_58%)] opacity-25 blur-[120px]" />
-          <div className="absolute inset-0 opacity-[.07] [background-image:linear-gradient(white_1px,transparent_1px),linear-gradient(90deg,white_1px,transparent_1px)] [background-size:44px_44px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
-        </div>
-        <div className="relative flex items-center gap-3">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
+      {/* Liseré aux couleurs du drapeau, comme la page d'accueil */}
+      <div aria-hidden className="flex h-1 w-full">
+        <span className="flex-[7] bg-[#007FFF]" /><span className="flex-1 bg-[#F7D618]" /><span className="flex-[2] bg-[#CE1021]" />
+      </div>
+      {/* Halo discret derrière le formulaire */}
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-[120px]" />
+
+      <header className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
+        <Link href="/accueil" className="flex items-center gap-3">
           <Logo />
           <span className="text-[15px] font-semibold tracking-tight">Fraude RDC</span>
-          <span className="mx-1 h-6 w-px bg-white/15" />
-          <DrcFlag className="h-6 w-8 rounded-[4px] shadow-md ring-1 ring-white/20" />
-          <span className="text-xs leading-tight text-white/65">République démocratique<br />du Congo</span>
+        </Link>
+        <Link href="/accueil" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Accueil
+        </Link>
+      </header>
+
+      {/* Trois colonnes sur grand écran : téléphone Mobile Money | formulaire (centré) | carte Visa virtuelle */}
+      <main className="relative mx-auto grid w-full max-w-7xl flex-1 items-center justify-items-center gap-10 px-5 py-8
+                       lg:grid-cols-[1fr_400px_1fr] xl:gap-16">
+        {/* l'animation est sur l'enveloppe : sur le même élément, elle écraserait la rotation */}
+        <div className="hidden animate-fade-up lg:flex lg:justify-end">
+          <MobileMoneyPhone className="-rotate-6 drop-shadow-2xl" />
         </div>
-
-        <div className="relative my-auto grid items-center gap-10 py-10 xl:grid-cols-[minmax(0,1fr)_330px]">
-          <div className="max-w-lg">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70 backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-risk-faible" /> Supervision 24 h/24
-            </div>
-            <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight xl:text-[44px]">
-              Détecter la fraude <span className="bg-gradient-to-r from-[hsl(217_91%_70%)] to-[hsl(262_90%_75%)] bg-clip-text text-transparent">avant qu&apos;elle ne coûte.</span>
-            </h1>
-            <p className="mt-4 text-[15px] leading-relaxed text-white/60">
-              Profilage comportemental des clients Mobile Money et des cartes Visa virtuelles en République démocratique du Congo.
-            </p>
+        <form onSubmit={submit}
+          className="w-full max-w-[400px] animate-fade-up rounded-2xl border bg-card/90 p-7 shadow-float backdrop-blur-md sm:p-8">
+          <div className="mb-6 flex flex-col items-center text-center">
+            <DrcFlag className="mb-4 h-8 w-11 rounded-md shadow ring-1 ring-black/5" />
+            <h1 className="text-2xl font-semibold tracking-tight">Connexion</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Accès réservé aux équipes anti-fraude.</p>
           </div>
-          <div className="hidden xl:block"><HeroIllustration /></div>
-        </div>
 
-        <ul className="relative grid gap-5 xl:grid-cols-3">
-          {FEATURES.map(({ icon: Icon, title, text }) => (
-            <li key={title} className="flex gap-3 xl:flex-col">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/5"><Icon className="h-5 w-5 text-[hsl(217_91%_72%)]" /></div>
-              <div><div className="text-sm font-medium">{title}</div><div className="mt-0.5 text-xs leading-relaxed text-white/55">{text}</div></div>
-            </li>
-          ))}
-        </ul>
-        <p className="relative mt-8 text-xs text-white/40">Prototype de recherche — données et visuels fictifs.</p>
-      </section>
-
-      {/* Formulaire */}
-      <section className="flex items-center justify-center bg-background p-6">
-        <form onSubmit={submit} className="w-full max-w-[380px] animate-fade-up">
-          <div className="mb-8 flex items-center gap-3 lg:hidden">
-            <Logo /><span className="font-semibold">Fraude RDC</span>
-            <DrcFlag className="ml-auto h-5 w-7 rounded-[3px] shadow ring-1 ring-border" />
-          </div>
-          <h2 className="text-2xl font-semibold tracking-tight">Connexion</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Accès réservé aux équipes anti-fraude.</p>
-
-          <label className="mb-1.5 mt-8 block text-sm font-medium" htmlFor="email">E-mail professionnel</label>
+          <label className="mb-1.5 block text-sm font-medium" htmlFor="email">E-mail professionnel</label>
           <Input id="email" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)}
             placeholder="prenom.nom@operateur.cd" className="h-11" />
           <label className="mb-1.5 mt-4 block text-sm font-medium" htmlFor="password">Mot de passe</label>
@@ -98,19 +80,35 @@ export default function LoginPage() {
               {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
+          {needOtp && (
+            <div className="mt-4 animate-fade-up">
+              <label className="mb-1.5 block text-sm font-medium" htmlFor="otp">Code de double authentification</label>
+              <Input id="otp" inputMode="numeric" autoComplete="one-time-code" autoFocus required pattern="[0-9 ]{6,8}" maxLength={8}
+                value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="123 456" className="h-11 text-center font-mono text-lg tracking-[.3em]" />
+              <p className="mt-1.5 text-xs text-muted-foreground">Code à 6 chiffres de votre application d&apos;authentification.</p>
+            </div>
+          )}
           {error && (
             <p role="alert" className="mt-4 rounded-lg border border-risk-critique/20 bg-risk-critique/10 px-3 py-2.5 text-sm text-risk-critique">
-              {error === "identifiants invalides" ? "E-mail ou mot de passe incorrect, ou compte désactivé." : error}
+              {error === "identifiants invalides" ? "E-mail ou mot de passe incorrect, ou compte désactivé."
+                : error === "code de double authentification invalide" ? "Code incorrect ou déjà utilisé : attendez le suivant." : error}
             </p>
           )}
           <Button type="submit" size="lg" className="mt-6 w-full" disabled={busy}>
-            {busy ? "Connexion…" : <>Se connecter <ArrowRight /></>}
+            {busy ? "Connexion…" : <>{needOtp ? "Valider le code" : "Se connecter"} <ArrowRight /></>}
           </Button>
-          <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            <Lock className="h-3.5 w-3.5" /> Chaque connexion est inscrite au journal d&apos;audit.
+          <p className="mt-5 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+            <Lock className="h-3.5 w-3.5 shrink-0" /> Chaque connexion est inscrite au journal d&apos;audit.
           </p>
         </form>
-      </section>
+        <div className="hidden animate-fade-up lg:flex lg:justify-start">
+          <VirtualCard className="rotate-[8deg]" />
+        </div>
+      </main>
+
+      <footer className="relative py-5 text-center text-xs text-muted-foreground">
+        Prototype de recherche — données et visuels fictifs.
+      </footer>
     </div>
   );
 }

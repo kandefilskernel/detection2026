@@ -66,6 +66,16 @@ def test_reports_are_available(client, admin):
     assert client.get("/reports/breakdown?dimension=drop table", headers=admin).status_code == 422
 
 
+def test_model_comparison_report(client, analyst):
+    assert client.get("/reports/model-comparison").status_code == 401
+    r = client.get("/reports/model-comparison", headers=analyst)
+    assert r.status_code == 200
+    body = r.json()
+    if body is not None:  # rapport écrit par ml.training.model_selection
+        assert body["decision"]["key"] == body["methods"][0]["key"]
+        assert len(body["methods"]) == 8 and all("weighted_score" in m for m in body["methods"])
+
+
 def test_fraud_map_locates_frauds_by_province(client, analyst):
     seed_alert("TX-MAP-1")
     r = client.get("/reports/fraud-map?minutes=60", headers=analyst)
@@ -172,3 +182,140 @@ def test_customer_complaint_labels_missed_fraud(client, analyst):
     # une seconde plainte sur un dossier clos est refusée
     assert client.post("/cases/complaint/TX-MISSED", headers=analyst, json={"note": "doublon"}).status_code == 409
     assert client.post("/cases/complaint/INCONNUE", headers=analyst, json={"note": "xxxxx"}).status_code == 404
+
+
+def test_institution_api_key_lifecycle(client, admin, analyst):
+    from shared.utils.api_keys import hash_key
+    body = {"code": "rawbank", "name": "Rawbank", "kind": "BANQUE", "contact_email": "fraude@rawbank.cd"}
+    assert client.post("/institutions", headers=analyst, json=body).status_code == 403
+    r = client.post("/institutions", headers=admin, json=body)
+    assert r.status_code == 201, r.text
+    created = r.json()
+    key = created["api_key"]
+    assert key.startswith("nuru_") and created["scopes"] == ["transactions", "feedback"]
+    assert client.post("/institutions", headers=admin, json=body).status_code == 409
+    # la clé n'est jamais stockée ni relue : seulement son empreinte et un préfixe
+    listed = next(i for i in client.get("/institutions", headers=admin).json() if i["code"] == "rawbank")
+    assert "api_key" not in listed and key.startswith(listed["key_prefix"])
+    with psycopg2.connect(dbname=TEST_DB, **PG) as c, c.cursor() as cur:
+        cur.execute("SELECT key_hash FROM institutions WHERE code = 'rawbank'")
+        assert cur.fetchone()[0] == hash_key(key)
+    # renouvellement : nouvelle clé, l'ancienne ne correspond plus
+    new_key = client.post(f"/institutions/{created['id']}/rotate-key", headers=admin).json()["api_key"]
+    assert new_key != key
+    with psycopg2.connect(dbname=TEST_DB, **PG) as c, c.cursor() as cur:
+        cur.execute("SELECT key_hash FROM institutions WHERE code = 'rawbank'")
+        assert cur.fetchone()[0] == hash_key(new_key)
+    # un régulateur supervise par défaut, il ne soumet pas de transactions
+    bcc = client.post("/institutions", headers=admin, json={"code": "bcc", "name": "Banque Centrale du Congo",
+                                                            "kind": "REGULATEUR"}).json()
+    assert bcc["scopes"] == ["supervision"]
+    assert client.post("/institutions", headers=admin, json={"code": "x1", "name": "X", "kind": "BANQUE",
+                                                             "scopes": ["tout"]}).status_code == 422
+    r = client.patch(f"/institutions/{created['id']}", headers=admin, json={"is_active": False})
+    assert r.status_code == 200 and r.json()["is_active"] is False
+
+
+def test_network_detects_shared_mule_and_returns_ego_graph(client, analyst):
+    """Trois comptes envoient vers le même portefeuille, deux transactions bloquées : réseau détecté."""
+    now = datetime.now(timezone.utc)
+    with engine.begin() as c:
+        for i, (user, prob, label) in enumerate([("UNET1", 0.95, 1), ("UNET2", 0.9, None), ("UNET3", 0.2, None)]):
+            c.execute(insert(ScoredTransaction).values(
+                transaction_id=f"TX-NET-{i}", tx_time=datetime(2025, 11, 3, 3, i), scored_at=now, user_id=user,
+                channel="MOBILE_MONEY", operator="VODACOM", tx_type="P2P_SEND", access_channel="APP", amount=80.0,
+                currency="USD", amount_usd=80.0, province="Kinshasa", device_id=f"DNET{i}", counterparty_id="243700000999",
+                fraud_probability=prob, risk_level="ELEVE", action="BLOCK" if prob > 0.5 else "APPROVE", reason="test",
+                rules_triggered=[], model_version="t", latency_ms=10.0, degraded=False, explanation={}, features={},
+                label=label))
+    r = client.get("/network/overview?minutes=60", headers=analyst)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    ring = next(x for x in body["rings"] if x["id"] == "W:243700000999")
+    assert ring["n_accounts"] == 3
+    ego = client.get("/network/ego?node=243700000999&minutes=60", headers=analyst).json()
+    assert ego["center"] == "W:243700000999"
+    assert {"U:UNET1", "U:UNET2", "U:UNET3"} <= {n["id"] for n in ego["nodes"]}
+    assert client.get("/network/ego?node=inconnu-xyz&minutes=60", headers=analyst).status_code == 404
+    assert client.get("/network/overview").status_code == 401
+
+
+def seed_scored(tx_id: str, prob: float, action: str = "APPROVE", user: str = "UFB", **extra) -> None:
+    with engine.begin() as c:
+        c.execute(insert(ScoredTransaction).values(
+            transaction_id=tx_id, tx_time=datetime(2025, 11, 4, 10, 0), scored_at=datetime.now(timezone.utc),
+            user_id=user, channel="MOBILE_MONEY", operator="ORANGE", tx_type="P2P_SEND", access_channel="APP",
+            amount=20.0, currency="USD", amount_usd=20.0, province="Kinshasa", device_id=f"D-{tx_id}",
+            fraud_probability=prob, risk_level="FAIBLE" if action == "APPROVE" else "ELEVE", action=action,
+            reason="test", rules_triggered=[], model_version="t", latency_ms=5.0, degraded=False,
+            explanation={"branch_scores": {"autoencoder": prob * 10}}, features={}, **extra))
+
+
+def test_feedback_queue_proposes_unreviewed_approved_transactions(client, analyst):
+    seed_scored("TX-FB-UNC", 0.49)          # au plus près du seuil
+    seed_scored("TX-FB-LOW", 0.001)
+    seed_scored("TX-FB-ALERT", 0.95, action="BLOCK")
+    r = client.get("/feedback/queue?days=1&per_reason=50", headers=analyst)
+    assert r.status_code == 200, r.text
+    q = r.json()["reasons"]
+    assert set(q) == {"INCERTITUDE", "NOUVEAUTE", "RESEAU", "TEMOIN"}
+    unc = [x["transaction_id"] for x in q["INCERTITUDE"]]
+    assert unc.index("TX-FB-UNC") < unc.index("TX-FB-LOW")
+    assert all(x["action"] == "APPROVE" for k in q for x in q[k])
+    assert "TX-FB-ALERT" not in {x["transaction_id"] for k in q for x in q[k]}
+
+
+def test_control_sample_review_feeds_missed_fraud_estimate(client, analyst):
+    seed_scored("TX-FB-T1", 0.02)
+    seed_scored("TX-FB-T2", 0.03)
+    seed_scored("TX-FB-AL", 0.9, action="VERIFY", label=1)
+    for tx, verdict in (("TX-FB-T1", "FRAUDE"), ("TX-FB-T2", "LEGITIME")):
+        r = client.post(f"/cases/review/{tx}", headers=analyst,
+                        json={"verdict": verdict, "note": "échantillon témoin vérifié", "reason": "TEMOIN"})
+        assert r.status_code == 201, r.text
+        assert r.json()["review_reason"] == "TEMOIN"
+    assert client.post("/cases/review/TX-FB-UNC", headers=analyst,
+                       json={"verdict": "LEGITIME", "note": "motif inconnu", "reason": "AUTRE"}).status_code == 422
+    q = client.get("/feedback/quality?days=1", headers=analyst)
+    assert q.status_code == 200, q.text
+    body = q.json()
+    assert body["control_sample"]["n"] == 2 and body["control_sample"]["k"] == 1
+    assert body["control_sample"]["low"] < 0.5 < body["control_sample"]["high"]
+    assert body["alert_precision"]["n"] >= 1 and body["estimate"]["missed_frauds"] > 0
+    assert 0 < body["estimate"]["recall"] < 1
+    assert any(r["reason"] == "TEMOIN" and r["n"] == 2 for r in body["labels_by_reason"])
+    # retirées de la file une fois revues
+    q2 = client.get("/feedback/queue?days=1&per_reason=50", headers=analyst).json()["reasons"]
+    assert "TX-FB-T1" not in {x["transaction_id"] for k in q2 for x in q2[k]}
+
+
+def test_cost_policy_simulate_save_and_history(client, analyst, admin):
+    for i, (p, amt) in enumerate([(0.3, 400.0), (0.3, 5.0), (0.002, 30.0), (0.99, 80.0)]):
+        with engine.begin() as c:
+            c.execute(insert(ScoredTransaction).values(
+                transaction_id=f"TX-POL-{i}", tx_time=datetime(2025, 11, 6, 8, i), scored_at=datetime.now(timezone.utc),
+                user_id="UPOL", channel="MOBILE_MONEY", operator="AIRTEL", tx_type="P2P_SEND", access_channel="APP",
+                amount=amt, currency="USD", amount_usd=amt, province="Kinshasa", device_id="DPOL", fraud_probability=p,
+                risk_level="MOYEN", action="APPROVE", reason="t", rules_triggered=[], model_version="t", latency_ms=1.0,
+                degraded=False, explanation={}, features={}))
+    base = client.get("/policy", headers=analyst).json()
+    assert base["active_id"] is None and base["active"] == base["defaults"]
+
+    cand = base["defaults"]
+    cand["costs"]["MOBILE_MONEY"]["false_block_usd"] = 0.0
+    cand["costs"]["MOBILE_MONEY"]["false_block_amount_share"] = 0.0
+    sim = client.post("/policy/simulate", headers=analyst, json={"params": cand, "days": 1})
+    assert sim.status_code == 200, sim.text
+    body = sim.json()
+    assert body["changed"] >= 1 and body["candidate"]["actions"]["BLOCK"] > body["current"]["actions"]["BLOCK"]
+
+    bad = {**cand, "block_floor": 0.1}
+    assert client.post("/policy/simulate", headers=analyst, json={"params": bad}).status_code == 422
+    save = {"params": cand, "note": "test : blocage sans coût pour les clients honnêtes"}
+    assert client.put("/policy", headers=analyst, json=save).status_code == 403
+    r = client.put("/policy", headers=admin, json=save)
+    assert r.status_code == 200, r.text
+    assert r.json()["published"] is False            # Redis injoignable en test : rien n'atteint le scoring réel
+    after = client.get("/policy", headers=analyst).json()
+    assert after["active_id"] == r.json()["id"] and after["active"]["version"] == r.json()["version"]
+    assert after["history"][0]["simulation"]["changed"] >= 1

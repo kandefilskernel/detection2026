@@ -102,7 +102,7 @@ def handle(batch: list[dict]) -> None:
                 transaction_id=t["transaction_id"], tx_time=datetime.fromisoformat(t["timestamp"]),
                 user_id=t["user_id"], channel=t["channel"], tx_type=t["tx_type"], amount_usd=t["amount_usd"],
                 fraud_probability=d["fraud_probability"], risk_level=d["risk_level"], action=d["action"],
-                fraud_type=d.get("fraud_type"),
+                fraud_type=d.get("fraud_type"), institution=t.get("institution"),
             ).on_conflict_do_nothing(index_elements=["transaction_id"]).returning(Case.id))
             if case_id is None:          # message rejoué : dossier déjà ouvert
                 continue

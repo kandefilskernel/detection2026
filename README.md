@@ -158,6 +158,72 @@ sur des données réelles cette fréquence doit être mesurée, et le mode repas
 python -m ml.physics.evaluate_physics     # violations, valeur ajoutée, coût, test de robustesse -> ml/reports/physics_evaluation.md
 ```
 
+### Réseaux de fraude (analyse de graphe)
+Le score note chaque transaction isolément ; l'écran **Réseaux de fraude** (http://localhost/reseaux) relie les comptes par
+les entités qu'ils partagent : portefeuilles destinataires, appareils, agents, marchands (`shared/graph/network.py`, sans
+dépendance). Chaque transaction pèse par le verdict de l'analyste s'il existe, sinon par la probabilité du modèle. Trois
+scores interprétables : **risque direct** d'une entité (part de fraude lissée vers le taux global), **exposition** d'un compte
+(OU probabiliste de l'excès de risque de ses entités), **risque propagé** à deux sauts (entité -> comptes -> autres entités).
+Les réseaux sont les composantes reliées par des entités à risque direct élevé partagées par au moins deux comptes. API :
+`GET /network/overview`, `GET /network/ego?node=U:U000123` ; lien « Client » et « Destinataire » depuis chaque transaction.
+```powershell
+python -m ml.graph.evaluate_graph     # rejeu chronologique, verdicts différés de 7 jours -> ml/reports/graph_evaluation.md
+```
+Sur les données simulées : la règle « modèle OU réseau » rattrape 54 fraudes manquées par le modèle (dont 50 d'ingénierie
+sociale), le rappel passant de 97,8 % à 100 % pour 0,5 % de fausses alertes au lieu de 0,1 %. Le score réseau classe 93 à 96 %
+de vraies mules, appareils de fraudeurs ou agents compromis parmi ses 25 à 100 premières entités, contre 0 % pour le simple
+nombre de comptes distincts. Le générateur réutilise un nombre fini de mules et d'appareils : l'ampleur dépend de cette hypothèse.
+
+### Boucle de retour des analystes
+L'écran **Revue & qualité** (http://localhost/revue) complète les alertes par une **file de revue** de transactions
+approuvées, choisies pour ce que leur verdict apprend au modèle : *incertitude* (probabilité au plus près du seuil,
+apprentissage actif), *nouveauté* (autoencodeur), *réseau* (liée à une entité à risque) et *témoin* (tirage aléatoire du
+jour). Le motif de chaque revue est conservé (`cases.review_reason`). Le témoin est la seule mesure **sans biais** des
+fraudes que le modèle laisse passer : l'écran en déduit le nombre de fraudes manquées et le rappel estimés, avec intervalle
+de confiance de Wilson, à côté de la précision réelle des alertes d'après les verdicts et de la calibration.
+Au réentraînement, un verdict vérifié (analyste, plainte, file de revue) pèse `VERIFIED_LABEL_WEIGHT` (3 par défaut) fois
+une étiquette supposée (« 0 » faute de plainte après 7 jours) ; le poids s'applique à XGBoost et au méta-apprenant.
+API : `GET /feedback/queue`, `GET /feedback/quality`.
+```powershell
+python -m ml.retraining.evaluate_feedback   # stratégies de revue à budget égal -> ml/reports/feedback_evaluation.md
+```
+Sur le rejeu mensuel du test (13 mois, 200 revues supplémentaires par mois, branche XGBoost) : ne revoir que les
+alertes laisse passer 73 fraudes ; revoir les cas incertains en ramène 38 avec des verdicts pondérés (51 sans
+pondération), les revues trouvant elles-mêmes 39 fraudes. L'échantillon témoin seul apporte peu à l'apprentissage
+(61 fraudes manquées) mais c'est lui qui mesure le taux de fraudes manquées. Mélanger incertitude et témoin garde
+l'essentiel du gain (43) tout en fournissant cette mesure.
+
+### Politique de décision selon le coût
+Le scoring choisit l'action (approuver, vérifier, bloquer) dont la **perte attendue** est la plus faible, d'après la
+probabilité du modèle, le montant et les coûts métier : fraude laissée passer, friction d'une vérification, client
+honnête bloqué (`shared/policy/costs.py`, coûts par canal et, au besoin, par opérateur Mobile Money). L'écran
+**Politique de décision** (http://localhost/politique) rejoue les transactions récentes avec des coûts candidats et
+montre, avant d'appliquer, les décisions qui changeraient et la perte attendue et réalisée. Un superviseur applique une
+nouvelle version avec sa justification : elle est versionnée en base, publiée dans Redis et rechargée à chaud par le
+scoring en moins de 10 secondes. API : `GET /policy`, `POST /policy/simulate`, `PUT /policy`.
+```powershell
+python -m ml.serving.evaluate_policy     # seuil unique contre coût, mêmes coûts métier -> ml/reports/policy_evaluation.md
+```
+Sur la seconde moitié du test (91 620 transactions), avec les mêmes coûts métier pour toutes les politiques :
+bloquer au-dessus du seuil F1 coûte 2 354 USD (98,4 % des fraudes stoppées), la décision coût-sensible 1 017 USD
+(99,9 %), et 976 USD une fois réglée sur la première moitié. En contrepartie, la part de clients honnêtes gênés passe de
+0,08 % à 0,63 %, surtout par des vérifications. Les coûts métier sont des hypothèses à remplacer par ceux des opérateurs.
+
+### Sécurité du back-office
+- **Double authentification (TOTP, RFC 6238)** : obligatoire pour les rôles de `REQUIRE_2FA_ROLES` (superviseur et
+  administrateur par défaut) ; à la première connexion, l'écran **Sécurité du compte** guide l'activation (Google
+  Authenticator, Microsoft Authenticator, FreeOTP). Secret chiffré en base, code déjà utilisé refusé. Téléphone perdu :
+  un administrateur réinitialise la 2FA depuis **Utilisateurs**. Pour une démonstration sans téléphone :
+  `REQUIRE_2FA_ROLES=` dans `.env`.
+- **Verrouillage** : `MAX_FAILED_LOGINS` échecs consécutifs (5) bloquent le compte `LOCKOUT_MINUTES` minutes (15) ;
+  un administrateur peut le déverrouiller.
+- **Quatre yeux** : déclarer « faux positif » une transaction **bloquée** d'au moins `FOUR_EYES_MIN_USD` (500 USD) crée
+  une demande de déblocage ; un second superviseur, différent du demandeur, la valide ou la refuse dans **Alertes**.
+- **Quota par institution** : en plus de la limite par IP de Nginx, l'integration-layer applique un seau à jetons par
+  institution (`PARTNER_RATE_LIMIT_PER_S`, réglable par institution via `rate_limit_per_s`), réponse 429 + `Retry-After`.
+
+Tout est inscrit au journal d'audit (connexions, échecs, verrouillages, 2FA, demandes et décisions de déblocage).
+
 ### Courbes d'apprentissage et surapprentissage
 Chaque entraînement (`train_model`, réentraînement automatique) enregistre la perte d'entraînement et celle de validation de
 chaque branche, et rend un verdict (`ml/training/diagnostics.py`) : sain, peut encore apprendre, surapprentissage léger ou

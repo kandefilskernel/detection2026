@@ -1,0 +1,32 @@
+@startuml diagramme_contexte
+' Diagramme de contexte : le système et ses interlocuteurs externes
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam rectangle {
+  BackgroundColor #EEF4FF
+  BorderColor #2563EB
+}
+left to right direction
+title Diagramme de contexte du système de détection de fraude
+
+actor "Opérateurs Mobile Money\n(Vodacom, Airtel, Orange)" as OP
+actor "Émetteur de cartes\nVisa virtuelles" as VISA
+actor "Banques partenaires" as BQ
+actor "Régulateur (BCC)" as BCC
+actor "Client (titulaire)" as CLI
+actor "Équipe anti-fraude\n(analyste, superviseur,\nadministrateur)" as EQ
+
+rectangle "Système de détection de fraude\npar profilage comportemental" as SYS
+
+OP --> SYS : opérations à noter,\nretours de fraude
+SYS --> OP : décision, niveau de risque,\ntype de fraude
+VISA --> SYS : opérations carte
+SYS --> VISA : décision
+BQ --> SYS : opérations au format commun,\nretours
+SYS --> BQ : décision
+BCC --> SYS : requêtes de supervision
+SYS --> BCC : agrégats sans donnée personnelle
+SYS --> CLI : SMS (confirmation, blocage)
+EQ --> SYS : verdicts, plaintes,\nréentraînement, gestion
+SYS --> EQ : alertes expliquées,\nindicateurs, audit
+@enduml

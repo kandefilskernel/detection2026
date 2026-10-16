@@ -56,3 +56,21 @@ def test_novelty_is_low_on_the_same_distribution_and_alarms_on_new_behaviors():
     new = novelty(ref, cur)
     assert new["rate"] >= 0.09 and new["alarm"]
     assert not novelty(ref, cur[:100], min_window=500)["alarm"]       # fenêtre trop petite : pas d'alarme
+
+
+def test_verified_labels_outweigh_assumed_ones():
+    """Même profil, étiquettes contradictoires : les verdicts vérifiés (poids 3) doivent tirer la prédiction."""
+
+    from ml.models.xgboost_branch import train_xgboost_branch
+    from ml.retraining import retrain
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(600, 4)).astype(np.float32)
+    y = (X[:, 0] > 1.2).astype(int)
+    X[:30] = 0.0                                   # profil ambigu : 10 fraudes vérifiées, 20 « 0 » supposés
+    y[:10], y[10:30] = 1, 0
+    w = np.ones(len(y))
+    w[:10] = retrain.VERIFIED_LABEL_WEIGHT
+    plain = train_xgboost_branch(X, y, X, y, n_estimators=60)
+    weighted = train_xgboost_branch(X, y, X, y, n_estimators=60, sample_weight=w)
+    x0 = np.zeros((1, 4), np.float32)
+    assert weighted.predict_proba(x0)[0, 1] > plain.predict_proba(x0)[0, 1]

@@ -120,10 +120,20 @@ services:
       SCORING_URL: http://scoring-service:8001
       SCORING_API_KEY: ${SCORING_API_KEY:-dev-scoring-key}
       OPERATOR_API_KEYS: ${OPERATOR_API_KEYS:-vodacom:dev-vodacom-key,airtel:dev-airtel-key,orange:dev-orange-key,visa:dev-visa-key}
+      # API partenaires : institutions et clés en base, retours et audit dans Kafka
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-nuru_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nuru_secure_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-fraud_detection_db}
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      PARTNER_RATE_LIMIT_PER_S: ${PARTNER_RATE_LIMIT_PER_S:-100}
+      PARTNER_RATE_BURST_FACTOR: ${PARTNER_RATE_BURST_FACTOR:-2}
     ports:
       - "8002:8002"
     depends_on:
       scoring-service:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
 
   backoffice-api:
@@ -139,6 +149,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       CORS_ORIGINS: http://localhost:3000,http://localhost
       RAG_INDEX_PATH: /srv/ml/artifacts/case_index.npz
+      REDIS_URL: redis://redis:6379/0        # publication de la politique de coût (rechargée par le scoring)
     volumes:
       - ./ml/artifacts:/srv/ml/artifacts:ro
     ports:
@@ -147,6 +158,8 @@ services:
       postgres:
         condition: service_healthy
       redpanda:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   # Workers Kafka (même image, commande différente)

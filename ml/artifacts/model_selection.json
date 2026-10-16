@@ -1,0 +1,408 @@
+{
+  "n_test": 183240,
+  "n_fraud_test": 2437,
+  "n_boot": 1000,
+  "criteria": [
+    {
+      "key": "pr_auc",
+      "label": "PR-AUC",
+      "weight": 0.3
+    },
+    {
+      "key": "f1",
+      "label": "F1 / fausses alertes",
+      "weight": 0.2
+    },
+    {
+      "key": "explicabilite",
+      "label": "Explicabilité",
+      "weight": 0.15
+    },
+    {
+      "key": "temps_reel",
+      "label": "Temps réel et simplicité",
+      "weight": 0.15
+    },
+    {
+      "key": "dynamique",
+      "label": "Dynamique (séquence)",
+      "weight": 0.1
+    },
+    {
+      "key": "inedit",
+      "label": "Fraudes inédites",
+      "weight": 0.1
+    }
+  ],
+  "justifications": {
+    "explicabilite": "règles et régression logistique transparentes (5) ; TreeSHAP exact pour XGBoost, conservé par l'hybride avec la contribution des composantes et l'attention (4) ; Random Forest (3) ; attention seule ou score d'anomalie global (2)",
+    "temps_reel": "modèles linéaires et arbres très rapides (4-5) ; LSTM et hybride plus coûteux en calcul et en maintenance (3)",
+    "dynamique": "seuls le LSTM et l'hybride lisent la séquence des opérations (5) ; XGBoost n'en voit qu'un résumé par les variables de fréquence (2)",
+    "inedit": "autoencodeur et Isolation Forest apprennent sans étiquette (5, 4) ; l'hybride hérite de l'autoencodeur et des lois physiques (4) ; méthodes supervisées limitées aux fraudes connues (1)"
+  },
+  "methods": [
+    {
+      "key": "hybrid",
+      "label": "Hybride",
+      "family": "Empilement (XGBoost + LSTM + autoencodeur)",
+      "pr_auc": 0.9955,
+      "roc_auc": 0.9999,
+      "precision": 0.9513,
+      "recall": 0.9778,
+      "f1": 0.9644,
+      "false_positive_rate": 0.00067,
+      "threshold": 0.5384487964065672,
+      "notes": {
+        "pr_auc": 5,
+        "f1": 5,
+        "explicabilite": 4,
+        "temps_reel": 3,
+        "dynamique": 5,
+        "inedit": 4
+      },
+      "weighted_score": 4.45,
+      "equal_weight_score": 4.33,
+      "rank1_share": 0.9085
+    },
+    {
+      "key": "branch_xgboost",
+      "label": "XGBoost",
+      "family": "Ensemble d'arbres (boosting)",
+      "pr_auc": 0.9895,
+      "roc_auc": 0.9998,
+      "precision": 0.9176,
+      "recall": 0.9594,
+      "f1": 0.938,
+      "false_positive_rate": 0.00116,
+      "threshold": 2.5038838386535645,
+      "notes": {
+        "pr_auc": 4,
+        "f1": 4,
+        "explicabilite": 4,
+        "temps_reel": 5,
+        "dynamique": 2,
+        "inedit": 1
+      },
+      "weighted_score": 3.65,
+      "equal_weight_score": 3.33,
+      "rank1_share": 0.052
+    },
+    {
+      "key": "branch_lstm_attention",
+      "label": "LSTM-attention",
+      "family": "Réseau récurrent",
+      "pr_auc": 0.9894,
+      "roc_auc": 0.9998,
+      "precision": 0.9298,
+      "recall": 0.9672,
+      "f1": 0.9481,
+      "false_positive_rate": 0.00098,
+      "threshold": 3.883974075317383,
+      "notes": {
+        "pr_auc": 4,
+        "f1": 4,
+        "explicabilite": 2,
+        "temps_reel": 3,
+        "dynamique": 5,
+        "inedit": 2
+      },
+      "weighted_score": 3.45,
+      "equal_weight_score": 3.33,
+      "rank1_share": 0.0
+    },
+    {
+      "key": "baseline_random_forest",
+      "label": "Random Forest",
+      "family": "Ensemble d'arbres (bagging)",
+      "pr_auc": 0.9842,
+      "roc_auc": 0.9998,
+      "precision": 0.934,
+      "recall": 0.929,
+      "f1": 0.9315,
+      "false_positive_rate": 0.00088,
+      "threshold": 0.5343267785315947,
+      "notes": {
+        "pr_auc": 4,
+        "f1": 4,
+        "explicabilite": 3,
+        "temps_reel": 4,
+        "dynamique": 1,
+        "inedit": 1
+      },
+      "weighted_score": 3.25,
+      "equal_weight_score": 2.83,
+      "rank1_share": 0.0
+    },
+    {
+      "key": "baseline_logreg",
+      "label": "Régression logistique",
+      "family": "Linéaire",
+      "pr_auc": 0.9513,
+      "roc_auc": 0.9989,
+      "precision": 0.8816,
+      "recall": 0.8675,
+      "f1": 0.8745,
+      "false_positive_rate": 0.00157,
+      "threshold": 5.116697695952764,
+      "notes": {
+        "pr_auc": 3,
+        "f1": 3,
+        "explicabilite": 5,
+        "temps_reel": 5,
+        "dynamique": 1,
+        "inedit": 1
+      },
+      "weighted_score": 3.2,
+      "equal_weight_score": 3.0,
+      "rank1_share": 0.0265
+    },
+    {
+      "key": "branch_autoencoder",
+      "label": "Autoencodeur",
+      "family": "Anomalie (non supervisé)",
+      "pr_auc": 0.7094,
+      "roc_auc": 0.9708,
+      "precision": 0.9591,
+      "recall": 0.6155,
+      "f1": 0.7498,
+      "false_positive_rate": 0.00035,
+      "threshold": 1.0802854299545288,
+      "notes": {
+        "pr_auc": 2,
+        "f1": 2,
+        "explicabilite": 2,
+        "temps_reel": 4,
+        "dynamique": 1,
+        "inedit": 5
+      },
+      "weighted_score": 2.5,
+      "equal_weight_score": 2.67,
+      "rank1_share": 0.0095
+    },
+    {
+      "key": "baseline_rules",
+      "label": "Règles métier",
+      "family": "Système expert",
+      "pr_auc": 0.2755,
+      "roc_auc": 0.7841,
+      "precision": 0.3712,
+      "recall": 0.357,
+      "f1": 0.3639,
+      "false_positive_rate": 0.00815,
+      "threshold": 0.9999999985751477,
+      "notes": {
+        "pr_auc": 1,
+        "f1": 1,
+        "explicabilite": 5,
+        "temps_reel": 5,
+        "dynamique": 1,
+        "inedit": 2
+      },
+      "weighted_score": 2.3,
+      "equal_weight_score": 2.5,
+      "rank1_share": 0.0035
+    },
+    {
+      "key": "baseline_isolation_forest",
+      "label": "Isolation Forest",
+      "family": "Anomalie (non supervisé)",
+      "pr_auc": 0.3913,
+      "roc_auc": 0.9487,
+      "precision": 0.4283,
+      "recall": 0.3947,
+      "f1": 0.4108,
+      "false_positive_rate": 0.0071,
+      "threshold": 0.5660026729490575,
+      "notes": {
+        "pr_auc": 1,
+        "f1": 1,
+        "explicabilite": 2,
+        "temps_reel": 4,
+        "dynamique": 1,
+        "inedit": 4
+      },
+      "weighted_score": 1.9,
+      "equal_weight_score": 2.17,
+      "rank1_share": 0.0
+    }
+  ],
+  "significance": [
+    {
+      "versus": "XGBoost",
+      "diff_pr_auc": 0.006,
+      "ci95": [
+        0.0044,
+        0.0079
+      ],
+      "significant_95": true,
+      "mcnemar_hybride_seul_juste": 156,
+      "mcnemar_autre_seul_juste": 23,
+      "mcnemar_p": 1.7646469777664257e-25
+    },
+    {
+      "versus": "LSTM-attention",
+      "diff_pr_auc": 0.0061,
+      "ci95": [
+        0.0045,
+        0.0078
+      ],
+      "significant_95": true,
+      "mcnemar_hybride_seul_juste": 157,
+      "mcnemar_autre_seul_juste": 75,
+      "mcnemar_p": 7.766590590326964e-08
+    },
+    {
+      "versus": "Autoencodeur",
+      "diff_pr_auc": 0.2861,
+      "ci95": [
+        0.2306,
+        0.3417
+      ],
+      "significant_95": true,
+      "mcnemar_hybride_seul_juste": 943,
+      "mcnemar_autre_seul_juste": 118,
+      "mcnemar_p": 2.47623334386951e-160
+    }
+  ],
+  "h3_xgboost_vs": [
+    {
+      "versus": "Random Forest",
+      "diff_pr_auc": 0.0104,
+      "ci95": [
+        0.0079,
+        0.0135
+      ],
+      "significant_95": true
+    },
+    {
+      "versus": "Régression logistique",
+      "diff_pr_auc": 0.045,
+      "ci95": [
+        0.034,
+        0.0591
+      ],
+      "significant_95": true
+    },
+    {
+      "versus": "Isolation Forest",
+      "diff_pr_auc": 0.6098,
+      "ci95": [
+        0.5423,
+        0.6778
+      ],
+      "significant_95": true
+    },
+    {
+      "versus": "Règles métier",
+      "diff_pr_auc": 0.7167,
+      "ci95": [
+        0.6845,
+        0.7477
+      ],
+      "significant_95": true
+    }
+  ],
+  "errors": {
+    "Hybride": {
+      "fausses_alertes": 122,
+      "fraudes_manquees": 54
+    },
+    "XGBoost": {
+      "fausses_alertes": 210,
+      "fraudes_manquees": 99
+    },
+    "LSTM-attention": {
+      "fausses_alertes": 178,
+      "fraudes_manquees": 80
+    },
+    "Autoencodeur": {
+      "fausses_alertes": 64,
+      "fraudes_manquees": 937
+    }
+  },
+  "recall_by_type": {
+    "ACCOUNT_TAKEOVER": {
+      "n": 406,
+      "Hybride": 1.0,
+      "XGBoost": 1.0,
+      "LSTM-attention": 1.0,
+      "Autoencodeur": 0.9877
+    },
+    "AGENT_FRAUD": {
+      "n": 181,
+      "Hybride": 1.0,
+      "XGBoost": 1.0,
+      "LSTM-attention": 1.0,
+      "Autoencodeur": 1.0
+    },
+    "CARD_TESTING": {
+      "n": 81,
+      "Hybride": 1.0,
+      "XGBoost": 1.0,
+      "LSTM-attention": 1.0,
+      "Autoencodeur": 1.0
+    },
+    "CNP_FRAUD": {
+      "n": 131,
+      "Hybride": 1.0,
+      "XGBoost": 0.9847,
+      "LSTM-attention": 0.9847,
+      "Autoencodeur": 1.0
+    },
+    "SIM_SWAP": {
+      "n": 623,
+      "Hybride": 1.0,
+      "XGBoost": 1.0,
+      "LSTM-attention": 1.0,
+      "Autoencodeur": 0.9984
+    },
+    "SMURFING": {
+      "n": 303,
+      "Hybride": 0.9868,
+      "XGBoost": 0.9736,
+      "LSTM-attention": 0.9868,
+      "Autoencodeur": 0.0
+    },
+    "SOCIAL_ENGINEERING": {
+      "n": 630,
+      "Hybride": 0.9206,
+      "XGBoost": 0.8587,
+      "LSTM-attention": 0.8825,
+      "Autoencodeur": 0.0032
+    },
+    "TOPUP_DRAIN": {
+      "n": 82,
+      "Hybride": 1.0,
+      "XGBoost": 1.0,
+      "LSTM-attention": 1.0,
+      "Autoencodeur": 1.0
+    }
+  },
+  "sensitivity_draws": 2000,
+  "latency_ms": {
+    "p50": 59.49,
+    "p95": 104.41,
+    "p99": 299.23
+  },
+  "relay_attack_recall": {
+    "modele_de_donnees (seuil F1)": 0.0033,
+    "modele_de_donnees (seuil 1 % de faux positifs)": 0.07,
+    "physique_seule": 1.0,
+    "hybride (donnees OU physique)": 1.0
+  },
+  "decision": {
+    "key": "hybrid",
+    "label": "Hybride",
+    "weighted_score": 4.45,
+    "runner_up": "XGBoost",
+    "runner_up_score": 3.65,
+    "rank1_share": 0.9085,
+    "reasons": [
+      "meilleure PR-AUC (0,9955) et meilleur F1 (0,964) sur la période de test",
+      "supériorité significative sur chacune des composantes seules (IC 95 % excluant 0, McNemar p < 0,05)",
+      "42 % de fausses alertes et 45 % de fraudes manquées en moins que XGBoost seul",
+      "couvre le profil instantané (XGBoost), la dynamique (LSTM) et l'anomalie (autoencodeur)",
+      "reste explicable (TreeSHAP, contribution des composantes, attention) et compatible avec le temps réel"
+    ]
+  }
+}

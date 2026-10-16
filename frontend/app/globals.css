@@ -68,14 +68,14 @@
   /* Tableaux de données */
   .tbl { @apply w-full text-sm; }
   .tbl thead th {
-    @apply sticky top-0 z-[1] whitespace-nowrap border-b bg-muted/70 px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-muted-foreground backdrop-blur;
+    @apply sticky top-0 z-[1] whitespace-nowrap border-b bg-muted/60 px-3 py-3 text-left text-[10.5px] font-semibold uppercase tracking-[.08em] text-muted-foreground backdrop-blur;
   }
   .tbl thead th:first-child, .tbl tbody td:first-child { @apply pl-5; }
   .tbl thead th:last-child, .tbl tbody td:last-child { @apply pr-5; }
   .tbl tbody td { @apply border-b border-border/70 px-3 py-2.5 align-middle; }
   .tbl tbody tr:last-child td { @apply border-0; }
   .tbl tbody tr { @apply transition-colors; }
-  .tbl tbody tr:hover { @apply bg-muted/50; }
+  .tbl tbody tr:hover { @apply bg-primary/[.035]; }
   .tbl .num { @apply text-right tabular; }
 
   /* Squelette de chargement */
@@ -187,3 +187,17 @@
 
 /* Fond OpenStreetMap en thème sombre : on inverse les tuiles claires */
 .fm-osm-dark .fm-osm { filter: invert(1) hue-rotate(180deg) brightness(.85) contrast(.9); }
+
+/* Page d'accueil : pulsation douce des grandes villes (désactivée si l'utilisateur réduit les animations) */
+@keyframes landing-pulse { 0% { transform: scale(.4); opacity: .9; } 70% { transform: scale(1.6); opacity: 0; } 100% { opacity: 0; } }
+.landing-pulse { transform-box: fill-box; transform-origin: center; animation: landing-pulse 3s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) { .landing-pulse { animation: none; opacity: .35; } }
+
+
+/* Fond de l'application : lueur très légère en haut de la zone de travail */
+.app-backdrop {
+  background:
+    radial-gradient(1200px 420px at 70% -120px, hsl(var(--primary) / 0.07), transparent 70%),
+    radial-gradient(800px 360px at 15% -160px, hsl(var(--accent) / 0.05), transparent 70%),
+    hsl(var(--background));
+}

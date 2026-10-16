@@ -6,6 +6,7 @@ Modèle de données PostgreSQL / TimescaleDB, partagé par le backoffice-api et 
                          (hypertable TimescaleDB partitionnée sur tx_time) ; sert aussi de
                          journal des prédictions pour l'apprentissage continu (label)
     cases                dossiers ouverts pour les alertes (VERIFY / BLOCK)
+    unblock_requests     déblocages importants en attente d'un second validateur (quatre yeux)
     notifications        alertes envoyées (e-mail, SMS, webhook opérateur)
     audit_log            journal d'audit inaltérable, chaîné par hachage SHA-256
                          (UPDATE / DELETE interdits par trigger) — traçabilité BCC
@@ -34,6 +35,13 @@ class BackofficeUser(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # double authentification (TOTP, RFC 6238) : secret chiffré, dernier pas utilisé (anti-rejeu)
+    totp_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    totp_last_step: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # verrouillage temporaire après plusieurs échecs de connexion
+    failed_logins: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class ScoredTransaction(Base):
@@ -70,12 +78,15 @@ class ScoredTransaction(Base):
     # étiquette issue du retour des analystes : 1 fraude confirmée, 0 faux positif
     label: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
     labeled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # institution partenaire qui a soumis la transaction (code de la table institutions)
+    institution: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     __table_args__ = (
         Index("ix_scored_action_time", "action", "tx_time"),
         Index("ix_scored_risk_time", "risk_level", "tx_time"),
         Index("ix_scored_fraud_type_time", "fraud_type", "tx_time"),
         Index("ix_scored_scored_at", "scored_at"),   # KPIs temps réel (horloge réelle)
+        Index("ix_scored_institution_time", "institution", "tx_time"),
     )
 
 
@@ -94,6 +105,10 @@ class Case(Base):
     fraud_type: Mapped[str | None] = mapped_column(String(24), nullable=True, index=True)
     # OUVERT -> EN_COURS -> FRAUDE_CONFIRMEE | FAUX_POSITIF
     status: Mapped[str] = mapped_column(String(20), default="OUVERT", index=True)
+    institution: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    # pourquoi ce cas a été revu : ALERTE du modèle, PLAINTE client, REVUE libre, ou file de revue
+    # (INCERTITUDE, NOUVEAUTE, RESEAU, TEMOIN = échantillon aléatoire des transactions approuvées)
+    review_reason: Mapped[str] = mapped_column(String(16), default="ALERTE", server_default="ALERTE", index=True)
     assigned_to: Mapped[int | None] = mapped_column(ForeignKey("bo_users.id"), nullable=True)
     resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     resolved_by: Mapped[int | None] = mapped_column(ForeignKey("bo_users.id"), nullable=True)
@@ -101,6 +116,35 @@ class Case(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),
                                                  onupdate=func.now())
+
+
+class UnblockRequest(Base):
+    """Principe des quatre yeux : débloquer une transaction bloquée d'un montant important (verdict « faux positif »)
+    demande la validation d'un second utilisateur, superviseur ou administrateur, différent du demandeur."""
+    __tablename__ = "unblock_requests"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), index=True)
+    transaction_id: Mapped[str] = mapped_column(String(64))
+    amount_usd: Mapped[float] = mapped_column(Float)
+    requested_by: Mapped[int] = mapped_column(ForeignKey("bo_users.id"))
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    note: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(12), default="EN_ATTENTE", server_default="EN_ATTENTE", index=True)
+    decided_by: Mapped[int | None] = mapped_column(ForeignKey("bo_users.id"), nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class DecisionPolicyVersion(Base):
+    """Version de la politique de coût (shared/policy/costs.py) : qui l'a réglée, pourquoi, avec quel effet simulé."""
+    __tablename__ = "decision_policies"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_by: Mapped[int] = mapped_column(ForeignKey("bo_users.id"))
+    params: Mapped[dict] = mapped_column(JSONB)
+    note: Mapped[str] = mapped_column(Text)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    simulation: Mapped[dict | None] = mapped_column(JSONB, nullable=True)   # effet simulé au moment du réglage
 
 
 class Notification(Base):
@@ -159,3 +203,24 @@ class RetrainState(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     signals: Mapped[dict] = mapped_column(JSONB)
+
+
+class Institution(Base):
+    """Institution partenaire qui utilise le système par l'API : opérateur Mobile Money, banque, émetteur de cartes,
+    ou régulateur (BCC, supervision en lecture seule). La clé d'API n'est jamais stockée : seulement son empreinte
+    SHA-256 ; elle n'est montrée qu'une fois, à la création ou au renouvellement."""
+    __tablename__ = "institutions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code: Mapped[str] = mapped_column(String(32), unique=True, index=True)       # ex. vodacom, rawbank, bcc
+    name: Mapped[str] = mapped_column(String(255))
+    kind: Mapped[str] = mapped_column(String(20))      # OPERATEUR_MM | BANQUE | EMETTEUR_CARTE | REGULATEUR
+    scopes: Mapped[list] = mapped_column(JSONB, default=list)      # transactions | feedback | supervision
+    providers: Mapped[list] = mapped_column(JSONB, default=list)   # formats natifs autorisés : vodacom, airtel…
+    key_prefix: Mapped[str] = mapped_column(String(16))
+    key_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    contact_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    key_rotated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # requêtes par seconde autorisées à cette institution (vide = valeur par défaut de l'integration-layer)
+    rate_limit_per_s: Mapped[int | None] = mapped_column(Integer, nullable=True)

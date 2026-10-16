@@ -9,7 +9,8 @@ l'action qui minimise la perte attendue (p = probabilité de fraude, m = montant
     VERIFY  : friction + p × m × (1 − taux_capture)   (confirmation PIN USSD / OTP / appel)
     BLOCK   : (1 − p) × (coût_faux_blocage + part_m × m)  (client honnête bloqué)
 
-Paramètres par canal (Mobile Money / Visa virtuelle), réglables sans réentraîner.
+Paramètres par canal (Mobile Money / Visa virtuelle), avec surcharges par opérateur, réglables sans réentraîner :
+la politique de coût (shared/policy/costs.py) est éditée et simulée dans le back-office, puis rechargée à chaud.
 Des règles réglementaires explicites passent ensuite AVANT le coût (auditables BCC).
 
 Le niveau de risque affiché aux analystes (FAIBLE / MOYEN / ÉLEVÉ / CRITIQUE) dépend
@@ -19,28 +20,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-ACTIONS = ("APPROVE", "VERIFY", "BLOCK")
-ACTION_RANK = {a: i for i, a in enumerate(ACTIONS)}
-
-
-@dataclass
-class ChannelCosts:
-    friction_usd: float          # coût d'une vérification (temps client, abandon, SMS)
-    step_up_catch_rate: float    # part des fraudes stoppées par la vérification
-    false_block_usd: float       # coût fixe d'un client honnête bloqué (appel, churn)
-    false_block_amount_share: float  # + part du montant (transaction perdue)
+from shared.policy.costs import ACTION_RANK, ACTIONS, ChannelCosts, CostPolicy  # noqa: F401 (réexport)
 
 
 @dataclass
 class DecisionPolicy:
     threshold: float                                   # seuil F1 du modèle (validation)
-    costs: dict = field(default_factory=lambda: {
-        "MOBILE_MONEY": ChannelCosts(0.30, 0.85, 4.0, 0.05),
-        # 3-D Secure : vérification moins coûteuse et plus efficace sur carte
-        "VISA_VIRTUAL": ChannelCosts(0.15, 0.90, 6.0, 0.05),
-    })
-    block_floor: float = 0.97   # au-delà : blocage quel que soit le montant
-    approve_ceiling: float = 0.01  # en deçà : approbation directe (pas de friction inutile)
+    cost: CostPolicy = field(default_factory=CostPolicy)
 
     def risk_level(self, p: float) -> str:
         t = self.threshold
@@ -52,25 +38,12 @@ class DecisionPolicy:
             return "MOYEN"
         return "FAIBLE"
 
-    def expected_costs(self, p: float, amount_usd: float, channel: str) -> dict:
-        c = self.costs.get(channel, self.costs["MOBILE_MONEY"])
-        return {
-            "APPROVE": p * amount_usd,
-            "VERIFY": c.friction_usd + p * amount_usd * (1 - c.step_up_catch_rate),
-            "BLOCK": (1 - p) * (c.false_block_usd + c.false_block_amount_share * amount_usd),
-        }
+    def expected_costs(self, p: float, amount_usd: float, channel: str, operator: str | None = None) -> dict:
+        return self.cost.expected_costs(p, amount_usd, channel, operator)
 
     def decide(self, p: float, amount_usd: float, channel: str, feats: dict, tx: dict,
-               text: dict | None = None, physics: dict | None = None) -> dict:
-        costs = self.expected_costs(p, amount_usd, channel)
-        if p >= self.block_floor:
-            action, reason = "BLOCK", "probabilité de fraude très élevée"
-        elif p < self.approve_ceiling:
-            action, reason = "APPROVE", "risque négligeable"
-        else:
-            action = min(costs, key=costs.get)
-            reason = "coût attendu minimal"
-
+               text: dict | None = None, physics: dict | None = None, operator: str | None = None) -> dict:
+        action, reason, costs = self.cost.cost_action(p, amount_usd, channel, operator)
         rules = regulatory_rules(feats, tx, text, physics)
         for rule in rules:
             if ACTION_RANK[rule["min_action"]] > ACTION_RANK[action]:
@@ -81,6 +54,7 @@ class DecisionPolicy:
             "reason": reason,
             "expected_costs_usd": {k: round(v, 4) for k, v in costs.items()},
             "rules_triggered": [r["id"] for r in rules],
+            "policy_version": self.cost.version,
         }
 
 

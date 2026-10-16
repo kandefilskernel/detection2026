@@ -1,0 +1,128 @@
+@startuml diagramme_deploiement
+' Diagramme de déploiement : Docker Compose (un hôte) — les manifestes K8s reprennent les mêmes artefacts
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam nodeBackgroundColor #F8FAFC
+skinparam ArrowColor #475569
+skinparam componentStyle rectangle
+
+title Diagramme de déploiement — Détection de fraude (RDC)
+
+actor "Analyste / Superviseur /\nAdministrateur" as User
+node "Systèmes opérateurs" as Ext <<externe>> {
+  artifact "Vodacom M-Pesa" as Voda
+  artifact "Airtel Money" as Airtel
+  artifact "Orange Money" as Orange
+  artifact "Émetteur Visa virtuelle" as VisaE
+}
+node "Passerelle SMS / SMTP" as Smtp <<externe>>
+
+node "Hôte Docker (Linux)" <<device>> {
+
+  node "Réseau Docker « nuru »" <<execution environment>> {
+
+    node "nuru_nginx\n:80" <<conteneur>> {
+      artifact "nginx.conf\n(reverse proxy, resolver 127.0.0.11)" as Nginx
+    }
+
+    node "nuru_frontend\n:3000" <<conteneur Node 20>> {
+      artifact "Next.js 14\n(tableau de bord)" as Front
+    }
+
+    node "nuru_integration\n:8002" <<conteneur Python 3.11>> {
+      artifact "integration-layer\n(FastAPI + adaptateurs)" as Integ
+    }
+
+    node "nuru_scoring\n:8001" <<conteneur Python 3.11>> {
+      artifact "scoring-service\n(FastAPI)" as Scoring
+      artifact "ml/artifacts\n(modèle hybride, scaler,\nclassifieur de type, index RAG)" as Art
+    }
+
+    node "nuru_backoffice\n:8003" <<conteneur Python 3.11>> {
+      artifact "backoffice-api\n(FastAPI + JWT + Alembic)" as Bo
+    }
+
+    node "Workers" <<conteneurs Python 3.11>> {
+      artifact "worker-persister" as WP
+      artifact "worker-alerter" as WA
+      artifact "worker-auditor" as WAu
+    }
+
+    node "Jobs ML" <<conteneurs Python 3.11>> {
+      artifact "feature-store-seeder" as Seeder
+      artifact "drift-monitor" as DriftM
+      artifact "retrainer" as Retr
+    }
+
+    node "nuru_redpanda\n:9092 / :19092" <<conteneur>> {
+      artifact "Kafka (Redpanda)\ntransactions.scored\nfraud.alerts\nanalyst.feedback\naudit.logs" as Kafka
+    }
+
+    node "nuru_redis\n:6379" <<conteneur>> {
+      artifact "Feature store\n(profils, idempotence)" as Redis
+    }
+
+    node "nuru_postgres\n:5432" <<conteneur>> {
+      database "PostgreSQL 16\n+ TimescaleDB" as Pg
+    }
+
+    node "nuru_mlflow\n:5000" <<conteneur>> {
+      artifact "Registre MLflow" as Mlflow
+    }
+
+    node "Supervision" <<conteneurs>> {
+      artifact "Prometheus :9090" as Prom
+      artifact "Grafana :3001" as Graf
+      artifact "Loki + Promtail" as Loki
+      artifact "redis / postgres exporters" as Exp
+      artifact "Mailpit :8025" as Mail
+    }
+  }
+
+  folder "Volumes Docker" {
+    storage "postgres_data" as VPg
+    storage "redis_data" as VRedis
+    storage "redpanda_data" as VKafka
+    storage "mlflow_data" as VMl
+    storage "prometheus_data / grafana_data / loki_data" as VMon
+  }
+}
+
+' --------------------------------------------------- flux
+User --> Nginx : HTTP(S)
+Nginx --> Front : /
+Nginx --> Bo : /api
+Ext --> Integ : REST JSON (format natif)
+Integ --> Scoring : POST /v1/score\n(transaction unifiée, relances bornées)
+Scoring --> Redis : profils + idempotence
+Scoring --> Art : chargement / rechargement à chaud
+Scoring --> Kafka : transactions.scored, fraud.alerts
+Kafka --> WP
+Kafka --> WA
+Kafka --> WAu
+WP --> Pg : scored_transactions
+WA --> Pg : cases, notifications
+WA --> Mail : e-mail
+WA --> Smtp : SMS client
+WAu --> Pg : audit_logs (chaînés)
+Bo --> Pg : SQL
+Bo --> Kafka : analyst.feedback, audit.logs
+Seeder --> Redis : amorçage des profils
+DriftM --> Pg : fenêtre récente
+Retr --> Pg : étiquettes, retrain_events
+Retr --> Art : promotion du champion
+Retr --> Mlflow : métriques, versions
+Prom --> Scoring : /metrics
+Prom --> Bo : /metrics
+Prom --> DriftM : /metrics
+Prom --> Exp
+Graf --> Prom
+Graf --> Loki
+
+Pg -- VPg
+Redis -- VRedis
+Kafka -- VKafka
+Mlflow -- VMl
+Prom -- VMon
+
+@enduml

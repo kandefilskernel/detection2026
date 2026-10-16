@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     # Mémoire de cas du RAG (index construit par `python -m ml.rag.case_index`)
     RAG_INDEX_PATH: str = "ml/artifacts/case_index.npz"
     RAG_EXTRA_CASES: int = 2000       # verdicts d'analystes récents ajoutés à la mémoire
+    # Sécurité : rôles tenus d'activer la double authentification (vide = facultative pour tous)
+    REQUIRE_2FA_ROLES: str = "SUPERVISEUR,ADMIN"
+    TOTP_ENCRYPTION_KEY: str = ""     # clé Fernet ; vide = dérivée de JWT_SECRET_KEY
+    MAX_FAILED_LOGINS: int = 5        # échecs consécutifs avant verrouillage
+    LOCKOUT_MINUTES: int = 15
+    # Quatre yeux : débloquer (faux positif) une transaction BLOQUÉE d'au moins ce montant exige un second validateur
+    FOUR_EYES_MIN_USD: float = 500.0
+    # Redis : publication de la politique de coût active, rechargée à chaud par le scoring
+    REDIS_URL: str = "redis://localhost:6379/0"
 
 
 settings = Settings()

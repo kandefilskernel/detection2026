@@ -30,6 +30,7 @@ from app.config import settings
 from app.events import EventPublisher
 from app.schemas import ScoreResponse
 from ml.serving.decision import DecisionPolicy
+from shared.policy.costs import REDIS_KEY as POLICY_KEY, CostPolicy
 from ml.physics.laws import summarize as summarize_physics
 from shared.nlp.analyzer import analyze as analyze_text
 from ml.serving.feature_store import scaler_fingerprint, PREFIX, RedisFeatureStore
@@ -115,7 +116,8 @@ def _watch_model(stop: threading.Event, interval: float = 30.0) -> None:
                     RELOAD_REFUSED.inc()
                     log.error("nouveau modèle %s REFUSÉ (%s) ; le modèle %s reste en service", version, problem, current)
                     continue
-                state["scorer"], state["policy"] = new, DecisionPolicy(threshold=new.threshold)
+                # nouveau seuil du modèle, même politique de coût
+                state["scorer"], state["policy"] = new, DecisionPolicy(threshold=new.threshold, cost=state["policy"].cost)
                 MODEL_VERSION.labels(current).set(0)
                 MODEL_VERSION.labels(new.model_version).set(1)
                 RELOADS.inc()
@@ -123,6 +125,26 @@ def _watch_model(stop: threading.Event, interval: float = 30.0) -> None:
                 log.warning("nouveau modèle chargé à chaud : %s -> %s", current, new.model_version)
         except Exception:  # noqa: BLE001 — fichiers en cours d'écriture : on réessaie plus tard
             log.exception("rechargement du modèle impossible pour l'instant")
+
+
+def load_cost_policy(r) -> CostPolicy:
+    """Politique publiée par le back-office (Redis) ; à défaut, ou si elle est invalide, la politique par défaut."""
+    try:
+        raw = r.get(POLICY_KEY)
+        return CostPolicy.from_dict(json.loads(raw)) if raw else CostPolicy()
+    except (redis.RedisError, ValueError, TypeError) as e:
+        log.error("politique de coût illisible (%s) : politique par défaut", e)
+        return CostPolicy()
+
+
+def _watch_policy(stop: threading.Event, interval: float = 10.0) -> None:
+    """Recharge à chaud la politique de coût modifiée dans le back-office."""
+    while not stop.wait(interval):
+        new = load_cost_policy(state["redis"])
+        old = state["policy"]
+        if new.to_dict() != old.cost.to_dict():
+            state["policy"] = DecisionPolicy(threshold=old.threshold, cost=new)
+            log.warning("politique de coût rechargée : %s -> %s", old.cost.version, new.version)
 
 
 @asynccontextmanager
@@ -137,7 +159,7 @@ async def lifespan(_app: FastAPI):
         redis=r,
         scorer=scorer,
         store=RedisFeatureStore(r, pd.Timestamp(meta["period_start"]).timestamp(), seq_len=scorer.seq_len),
-        policy=DecisionPolicy(threshold=scorer.threshold),
+        policy=DecisionPolicy(threshold=scorer.threshold, cost=load_cost_policy(r)),
         events=EventPublisher(settings.KAFKA_BOOTSTRAP_SERVERS, settings.KAFKA_ENABLED),
         api_keys={k.strip() for k in settings.SCORING_API_KEYS.split(",") if k.strip()},
     )
@@ -145,6 +167,7 @@ async def lifespan(_app: FastAPI):
     check_feature_store()
     stop = threading.Event()
     threading.Thread(target=_watch_model, args=(stop,), daemon=True).start()
+    threading.Thread(target=_watch_policy, args=(stop,), daemon=True).start()
     yield
     stop.set()
     state["events"].flush()
@@ -174,7 +197,7 @@ def _score(tx: UnifiedTransaction) -> dict:
                            channel=tx.channel.value)
         phys = summarize_physics(feats) if settings.PHYSICS_MODE != "off" else None
         dec = state["policy"].decide(res.probability, tx.amount_usd, tx.channel.value, feats, tx_in, text,
-                                     phys if settings.PHYSICS_MODE == "enforce" else None)
+                                     phys if settings.PHYSICS_MODE == "enforce" else None, operator=tx.operator)
         physics_box.update(phys or {})
         return (res, dec), ("FAILED" if dec["action"] == "BLOCK" else "SUCCESS")
 

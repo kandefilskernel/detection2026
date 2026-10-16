@@ -1,0 +1,120 @@
+@startuml diagramme_packages
+' Diagramme de packages : organisation du dépôt et dépendances entre modules
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle folder
+skinparam ArrowColor #475569
+
+title Diagramme de packages — fraud-detection-rdc
+
+package "frontend (Next.js)" as FE {
+  package "app" as FE_app {
+    package "accueil" as FE_acc
+    package "login" as FE_login
+    package "(app) : tableau de bord,\ntransactions, alertes, carte,\naudit, utilisateurs" as FE_pages
+  }
+  package "components" as FE_comp
+  package "lib (api, auth)" as FE_lib
+}
+
+package "services" as SVC {
+  package "integration-layer" as S_int {
+    package "adapters" as S_int_ad
+  }
+  package "scoring-service" as S_sc
+  package "backoffice-api" as S_bo {
+    package "routers :\nauth, transactions, cases,\nreports, audit, nlp, retraining" as S_bo_r
+    package "migrations (Alembic)" as S_bo_m
+  }
+  package "workers :\npersister, alerter, auditor" as S_wk
+  package "ml-jobs" as S_jobs
+}
+
+package "ml" as ML {
+  package "generator" as ML_gen
+  package "preprocessing" as ML_pre
+  package "features" as ML_feat
+  package "physics" as ML_phys
+  package "models" as ML_mod
+  package "training" as ML_train
+  package "serving" as ML_serv
+  package "rag" as ML_rag
+  package "nlp" as ML_nlp
+  package "monitoring" as ML_mon
+  package "retraining" as ML_ret
+  package "registry" as ML_reg
+  package "artifacts / reports / data" as ML_art
+}
+
+package "shared" as SH {
+  package "database (modèles ORM)" as SH_db
+  package "schemas" as SH_sch
+  package "kafka_config" as SH_k
+  package "rag" as SH_rag
+  package "nlp" as SH_nlp
+  package "utils (fx, temps)" as SH_ut
+  package "logging" as SH_log
+  package "exceptions" as SH_exc
+}
+
+package "infra" as INF {
+  package "nginx" as I_ng
+  package "prometheus / grafana / loki" as I_mon
+  package "k8s" as I_k8s
+}
+
+package "docs" as DOCS
+package "scripts" as SCR
+
+' --------------------------------------------------- dépendances
+FE_pages ..> FE_comp
+FE_pages ..> FE_lib
+FE_lib ..> S_bo : HTTP /api
+
+S_int ..> SH_sch
+S_int ..> SH_ut
+S_int ..> S_sc : HTTP /score
+
+S_sc ..> ML_serv
+S_sc ..> ML_feat
+S_sc ..> ML_phys
+S_sc ..> SH_rag
+S_sc ..> SH_nlp
+S_sc ..> SH_k
+S_sc ..> SH_sch
+
+S_bo ..> SH_db
+S_bo ..> SH_k
+S_bo ..> SH_nlp
+S_bo ..> SH_rag
+S_wk ..> SH_db
+S_wk ..> SH_k
+S_jobs ..> ML_mon
+S_jobs ..> ML_ret
+S_jobs ..> ML_serv
+
+ML_gen ..> SH_ut
+ML_pre ..> ML_gen : données brutes
+ML_feat ..> ML_phys
+ML_train ..> ML_feat
+ML_train ..> ML_mod
+ML_train ..> ML_pre
+ML_serv ..> ML_mod
+ML_serv ..> ML_feat
+ML_rag ..> SH_rag
+ML_nlp ..> SH_nlp
+ML_mon ..> SH_db
+ML_ret ..> ML_train
+ML_ret ..> ML_reg
+ML_ret ..> SH_db
+ML_train ..> ML_art : écrit
+ML_serv ..> ML_art : lit
+
+SH_db ..> SH_log
+SH_k ..> SH_exc
+
+I_ng ..> FE
+I_ng ..> S_bo
+SCR ..> ML : run_pipeline
+
+@enduml

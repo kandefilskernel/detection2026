@@ -3,6 +3,10 @@
     ANALYSTE     consulte les transactions, traite les dossiers
     SUPERVISEUR  + rapports, réaffectation des dossiers, journal d'audit
     ADMIN        + gestion des utilisateurs
+
+Double authentification (TOTP) : obligatoire pour les rôles de REQUIRE_2FA_ROLES. Tant qu'un tel utilisateur ne l'a
+pas activée, toutes les routes lui répondent 403 « 2FA_SETUP_REQUIRED », sauf /auth/me et /auth/2fa/* (dépendance
+get_current_user_setup). Le jeton indique si la connexion a été confirmée par un code (« mfa »).
 """
 from __future__ import annotations
 
@@ -35,13 +39,17 @@ def verify_password(password: str, hashed: str) -> bool:
         return False
 
 
-def create_access_token(user: BackofficeUser) -> str:
+def create_access_token(user: BackofficeUser, mfa: bool = False) -> str:
     exp = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    return jwt.encode({"sub": str(user.id), "email": user.email, "role": user.role, "exp": exp},
+    return jwt.encode({"sub": str(user.id), "email": user.email, "role": user.role, "mfa": mfa, "exp": exp},
                       settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> BackofficeUser:
+def two_factor_required(user: BackofficeUser) -> bool:
+    return user.role in {r.strip() for r in settings.REQUIRE_2FA_ROLES.split(",") if r.strip()}
+
+
+def _authenticate(token: str, db: Session) -> tuple[BackofficeUser, dict]:
     unauthorized = HTTPException(status.HTTP_401_UNAUTHORIZED, "authentification requise",
                                  headers={"WWW-Authenticate": "Bearer"})
     try:
@@ -52,6 +60,21 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.get(BackofficeUser, user_id)
     if user is None or not user.is_active:
         raise unauthorized
+    # 2FA activée après l'émission du jeton : la session doit être rouverte avec un code
+    if user.totp_enabled and not payload.get("mfa"):
+        raise unauthorized
+    return user, payload
+
+
+def get_current_user_setup(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> BackofficeUser:
+    """Utilisateur authentifié, même sans 2FA encore configurée (profil, configuration de la 2FA)."""
+    return _authenticate(token, db)[0]
+
+
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> BackofficeUser:
+    user, _ = _authenticate(token, db)
+    if two_factor_required(user) and not user.totp_enabled:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "2FA_SETUP_REQUIRED")
     return user
 
 

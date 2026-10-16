@@ -57,10 +57,29 @@ export default function AuditPage() {
                   <tr key={a.id}>
                     <td className="tabular text-xs text-muted-foreground">{a.id}</td>
                     <td className="whitespace-nowrap text-xs">{fmtDate(a.ts)}</td>
-                    <td className="text-xs font-medium">{a.actor}</td>
+                    <td className="whitespace-nowrap text-xs font-medium">
+                      <span className="inline-flex items-center gap-2">
+                        <span className={cn("grid h-6 w-6 place-items-center rounded-full text-[10px] font-semibold",
+                          a.actor.startsWith("system") ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary")}>
+                          {a.actor.startsWith("system") ? "⚙" : a.actor[0].toUpperCase()}
+                        </span>
+                        {a.actor}
+                      </span>
+                    </td>
                     <td><Pill tone={ACTION_TONE(a.action)}>{a.action}</Pill></td>
-                    <td className="text-xs">{a.entity} <span className="text-muted-foreground">{a.entity_id}</span></td>
-                    <td className="max-w-xs truncate font-mono text-[11px] text-muted-foreground" title={d}>{d === "{}" ? "—" : d}</td>
+                    <td className="whitespace-nowrap text-xs">{a.entity}{a.entity_id && <span className="text-muted-foreground"> · {a.entity_id}</span>}</td>
+                    <td className="max-w-sm" title={d}>
+                      {d === "{}" ? <span className="text-muted-foreground">—</span> : (
+                        <div className="flex max-w-md flex-nowrap items-center gap-1 overflow-hidden">
+                          {Object.entries(details).slice(0, 2).map(([k, v]) => (
+                            <span key={k} className="max-w-[190px] shrink-0 truncate rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                              <span className="font-medium text-foreground/80">{k}</span> {typeof v === "object" ? JSON.stringify(v) : String(v)}
+                            </span>
+                          ))}
+                          {Object.keys(details).length > 2 && <span className="shrink-0 text-[11px] text-muted-foreground">+{Object.keys(details).length - 2}</span>}
+                        </div>
+                      )}
+                    </td>
                     <td><span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">{a.hash.slice(0, 12)}</span></td>
                   </tr>
                 );

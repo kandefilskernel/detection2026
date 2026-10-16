@@ -98,10 +98,9 @@ export default function TransactionDetail({ params }: { params: { id: string } }
               {t.label != null && <Pill tone={t.label === 1 ? "critique" : "neutral"}>{t.label === 1 ? "Fraude confirmée" : "Faux positif"}</Pill>}</div>
             <h1 className="mt-3 text-2xl font-semibold tracking-tight">{fmtUsd(t.amount_usd)} <span className="text-base font-normal text-muted-foreground">· {t.tx_type}</span></h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Client <span className="font-medium text-foreground">{t.user_id}</span> · {fmtDate(t.tx_time)} (heure RDC) · <span className="font-mono text-xs">{t.transaction_id}</span>
+              Client <Link href={`/reseaux?node=${encodeURIComponent(`U:${t.user_id}`)}`} title="Voir le réseau du client" className="font-medium text-foreground hover:text-primary hover:underline">{t.user_id}</Link> · {fmtDate(t.tx_time)} (heure RDC) · <span className="font-mono text-xs">{t.transaction_id}</span>
             </p>
-            <p className="mt-3 max-w-2xl rounded-lg bg-muted/60 px-3 py-2 text-sm">{t.reason}</p>
-            {t.label == null && <ReviewPanel transactionId={t.transaction_id} onDone={reload} />}
+            <p className="mt-3 max-w-2xl rounded-lg bg-muted/60 px-3 py-2 text-sm first-letter:uppercase">{t.reason}</p>
             {t.explanation?.text_analysis && (
               <div className="mt-2 max-w-2xl rounded-lg border bg-muted/30 px-3 py-2.5">
                 <div className="mb-1.5 text-xs font-semibold">Analyse du message du transfert{t.explanation.fraud_type_source === "texte" && " (a déterminé le type de fraude)"}</div>
@@ -129,6 +128,8 @@ export default function TransactionDetail({ params }: { params: { id: string } }
         </div>
       </Card>
 
+      {t.label == null && <ReviewPanel transactionId={t.transaction_id} onDone={reload} />}
+
       <div className="grid gap-4 lg:grid-cols-3">
         <Section icon={<Receipt />} title="Opération">
           <CardContent>
@@ -140,7 +141,9 @@ export default function TransactionDetail({ params }: { params: { id: string } }
                 <MapPin className="h-3.5 w-3.5" />{t.province}{geo && ` · ${geo.capital}`}
               </Link>} />
             <Row k="Appareil" v={<span className="font-mono text-xs">{t.device_id}</span>} />
-            {t.counterparty_id && <Row k="Destinataire" v={t.counterparty_id} />}
+            {t.counterparty_id && <Row k="Destinataire" v={["P2P_SEND", "P2P_RECEIVE"].includes(t.tx_type)
+              ? <Link href={`/reseaux?node=${encodeURIComponent(`W:${t.counterparty_id}`)}`} title="Voir le réseau de ce portefeuille" className="text-primary hover:underline">{t.counterparty_id}</Link>
+              : t.counterparty_id} />}
             {t.agent_id && <Row k="Agent" v={t.agent_id} />}
             {t.merchant_id && <Row k="Marchand" v={t.merchant_id} />}
             {t.rules_triggered.length > 0 && <Row k="Règles déclenchées" v={t.rules_triggered.join(", ")} />}

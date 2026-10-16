@@ -1,0 +1,406 @@
+@startuml diagramme_classes
+' Diagramme de classes complet : entités persistées (PostgreSQL/TimescaleDB) + classes du moteur de détection
+' Rendu : https://www.plantuml.com/plantuml ou extension PlantUML (VS Code, IntelliJ)
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #2563EB
+  ArrowColor #475569
+}
+hide empty members
+
+title Diagramme de classes — Système de détection de fraude Mobile Money et Visa virtuelle (RDC)
+
+' =====================================================================
+package "Domaine (base de données)" #EEF4FF {
+
+  enum Role {
+    ANALYSTE
+    SUPERVISEUR
+    ADMIN
+  }
+  enum Action {
+    APPROVE
+    VERIFY
+    BLOCK
+  }
+  enum NiveauRisque {
+    FAIBLE
+    MOYEN
+    ELEVE
+    CRITIQUE
+  }
+  enum StatutDossier {
+    OUVERT
+    EN_COURS
+    FRAUDE_CONFIRMEE
+    FAUX_POSITIF
+  }
+  enum TypeFraude {
+    SIM_SWAP
+    ACCOUNT_TAKEOVER
+    SOCIAL_ENGINEERING
+    AGENT_FRAUD
+    SMURFING
+    CARD_TESTING
+    CNP_FRAUD
+    TOPUP_DRAIN
+  }
+  enum StatutModele {
+    CHAMPION
+    CHALLENGER
+    ARCHIVE
+    REJETE
+  }
+
+  class BackofficeUser <<table bo_users>> {
+    + id : int <<PK>>
+    + email : str <<unique>>
+    + full_name : str
+    + role : Role
+    + password_hash : str
+    + is_active : bool
+    + created_at : datetime
+  }
+
+  class ScoredTransaction <<hypertable scored_transactions>> {
+    + transaction_id : str <<PK>>
+    + tx_time : datetime <<PK>>
+    + scored_at : datetime
+    + user_id : str
+    + channel : str
+    + operator : str
+    + tx_type : str
+    + access_channel : str
+    + amount : float
+    + currency : str
+    + amount_usd : float
+    + province : str
+    + device_id : str
+    + counterparty_id : str
+    + agent_id : str
+    + merchant_id : str
+    + fraud_probability : float
+    + risk_level : NiveauRisque
+    + action : Action
+    + reason : str
+    + rules_triggered : json
+    + model_version : str
+    + latency_ms : float
+    + degraded : bool
+    + explanation : json
+    + fraud_type : TypeFraude
+    + fraud_type_probability : float
+    + features : json
+    + label : int
+    + labeled_at : datetime
+  }
+
+  class Case <<table cases>> {
+    + id : int <<PK>>
+    + transaction_id : str <<unique>>
+    + tx_time : datetime
+    + user_id : str
+    + channel : str
+    + tx_type : str
+    + amount_usd : float
+    + fraud_probability : float
+    + risk_level : NiveauRisque
+    + action : Action
+    + fraud_type : TypeFraude
+    + status : StatutDossier
+    + assigned_to : int <<FK>>
+    + resolution_note : str
+    + resolved_by : int <<FK>>
+    + resolved_at : datetime
+    + created_at : datetime
+    + updated_at : datetime
+  }
+
+  class Notification <<table notifications>> {
+    + id : int <<PK>>
+    + case_id : int <<FK>>
+    + channel : str
+    + recipient : str
+    + status : str
+    + detail : str
+    + created_at : datetime
+  }
+
+  class AuditLog <<table audit_logs>> {
+    + id : bigint <<PK>>
+    + ts : datetime
+    + actor : str
+    + action : str
+    + entity : str
+    + entity_id : str
+    + details : json
+    + prev_hash : str
+    + hash : str <<unique>>
+  }
+
+  class ModelRegistry <<table model_registry>> {
+    + id : int <<PK>>
+    + version : str <<unique>>
+    + status : StatutModele
+    + metrics : json
+    + trained_on : json
+    + created_at : datetime
+  }
+
+  class RetrainEvent <<table retrain_events>> {
+    + id : int <<PK>>
+    + ts : datetime
+    + trigger : str
+    + reasons : json
+    + status : str
+    + detail : json
+    + requested_by : str
+    + handled_at : datetime
+  }
+
+  class RetrainState <<table retrain_state>> {
+    + id : int <<PK>>
+    + updated_at : datetime
+    + signals : json
+  }
+
+  BackofficeUser "0..1" -- "0..*" Case : assigné à >
+  BackofficeUser "0..1" -- "0..*" Case : résout >
+  ScoredTransaction "1" -- "0..1" Case : ouvre >
+  Case "1" -- "0..*" Notification : déclenche >
+  ModelRegistry "1" -- "0..*" ScoredTransaction : note (model_version) >
+  RetrainEvent "0..1" ..> ModelRegistry : produit un challenger >
+  AuditLog "1" -- "0..1" AuditLog : chaîné à (prev_hash) >
+}
+
+' =====================================================================
+package "Intégration des opérateurs" #F0FDF4 {
+  class UnifiedTransaction <<schéma>> {
+    + transaction_id : str
+    + timestamp : datetime
+    + user_id : str
+    + channel : str
+    + operator : str
+    + tx_type : str
+    + amount : float
+    + currency : str
+    + amount_usd : float
+    + province : str
+    + device_id : str
+    + ip_country : str
+    + message : str
+  }
+  abstract class BaseAdapter {
+    + to_usd(amount, currency, when) : float
+    + {static} parse_time(value, fmt) : datetime
+    + {static} memo(payload) : str
+    + {static} require(payload, keys)
+    + {abstract} to_unified(payload) : UnifiedTransaction
+    + {abstract} from_unified(tx) : dict
+  }
+  class VodacomAdapter
+  class AirtelAdapter
+  class OrangeAdapter
+  class VisaVirtualAdapter
+  class AdapterError
+
+  BaseAdapter <|-- VodacomAdapter
+  BaseAdapter <|-- AirtelAdapter
+  BaseAdapter <|-- OrangeAdapter
+  BaseAdapter <|-- VisaVirtualAdapter
+  BaseAdapter ..> UnifiedTransaction : crée
+  BaseAdapter ..> AdapterError : lève
+}
+
+' =====================================================================
+package "Profilage comportemental" #FFF7ED {
+  class BehavioralFeatureExtractor {
+    - states : dict<str, _UserState>
+    + FEATURE_NAMES : list  (58)
+    + PHYSICS_NAMES : list  (6)
+    + process(tx) : dict
+    + extract(tx) : dict
+    + update(tx)
+  }
+  class _UserState {
+    + amounts : deque
+    + timestamps : deque
+    + devices : Counter
+    + counterparties : Counter
+    + provinces : Counter
+    + last_province : str
+    + balance_usd : float
+  }
+  class RedisFeatureStore {
+    + user_lock(uid, ttl_ms, wait_s)
+    + compute(tx, scale_fn, decide_fn, idem_key, result_fn) : dict
+    + bulk_load(extractor, sequences)
+    + scaler_fingerprint() : str
+  }
+  class "LoisPhysiques\n<<module laws>>" as Laws {
+    + haversine_km(a, b) : float
+    + min_travel_hours(distance_km) : float
+    + travel_law(prev, province, elapsed_s) : dict
+    + balance_law(amount, balance, is_debit, outflow) : dict
+    + evaluate(...) : dict
+    + summarize(phys) : dict
+  }
+  BehavioralFeatureExtractor "1" *-- "0..*" _UserState
+  BehavioralFeatureExtractor ..> Laws : utilise
+  RedisFeatureStore o-- BehavioralFeatureExtractor
+}
+
+' =====================================================================
+package "Modèle hybride" #FDF2F8 {
+  class HybridEnsemble {
+    - xgb : XGBClassifier
+    - lstm : LSTMAttentionBranch
+    - ae : AutoencoderBranch
+    - meta : LogisticRegression
+    + branch_scores(X, seq_idx, rows) : ndarray
+    + predict_proba(X, seq_idx, rows) : ndarray
+    + predict(X, seq_idx, rows) : ndarray
+    + save(dir, metadata)
+    + {static} load(dir) : HybridEnsemble
+  }
+  class XGBClassifier <<xgboost>>
+  class LSTMAttentionBranch <<nn.Module>> {
+    + forward(x, mask, return_attention)
+  }
+  class AttentionBlock <<nn.Module>> {
+    + forward(rnn_output, mask)
+  }
+  class AutoencoderBranch <<nn.Module>> {
+    + forward(x)
+    + reconstruction_error(x)
+  }
+  class LogisticRegression <<méta-apprenant>>
+
+  HybridEnsemble *-- XGBClassifier
+  HybridEnsemble *-- LSTMAttentionBranch
+  HybridEnsemble *-- AutoencoderBranch
+  HybridEnsemble *-- LogisticRegression
+  LSTMAttentionBranch *-- AttentionBlock
+}
+
+' =====================================================================
+package "Service de scoring" #F5F3FF {
+  class HybridScorer {
+    - ensemble : HybridEnsemble
+    - scaler : StandardScaler
+    - type_classifier : XGBClassifier
+    - explainer : TreeExplainer
+    + scale(feats) : ndarray
+    + score(x, history, explain) : ScoreResult
+    + classify_fraud_type(x, channel) : tuple
+  }
+  class ScoreResult {
+    + probability : float
+    + branch_scores : dict
+    + top_features : list
+    + fraud_type : TypeFraude
+    + fraud_type_probability : float
+    + ae_error : float
+  }
+  class DecisionPolicy {
+    + thresholds : dict
+    + costs : dict<str, ChannelCosts>
+    + risk_level(p) : NiveauRisque
+    + expected_costs(p, amount_usd, channel) : dict
+    + decide(p, amount_usd, channel, feats, tx, text, phys) : dict
+  }
+  class ChannelCosts {
+    + fn_factor : float
+    + fp_cost : float
+    + verify_cost : float
+  }
+  HybridScorer *-- HybridEnsemble
+  HybridScorer ..> ScoreResult : produit
+  DecisionPolicy *-- "1..*" ChannelCosts
+  DecisionPolicy ..> Action
+  DecisionPolicy ..> NiveauRisque
+}
+
+' =====================================================================
+package "Preuves : RAG et NLP" #ECFEFF {
+  class KnowledgeBase {
+    - passages : list<Passage>
+    - vectorizer : TfidfVectorizer
+    + search(query, fraud_type, k) : list
+  }
+  class Passage {
+    + doc : str
+    + title : str
+    + text : str
+    + fraud_types : list
+  }
+  class CaseMemory {
+    - vectors : ndarray
+    - labels : ndarray
+    - types : ndarray
+    + scale_vec(feats) : ndarray
+    + neighbors(feats, k, channel) : dict
+  }
+  class "AnalyseurTexte\n<<module analyzer>>" as Analyzer {
+    + normalize(text) : str
+    + sentiment(text) : dict
+    + social_engineering(text) : dict
+    + analyze(text) : dict
+    + summarize(sent, se) : str
+  }
+  KnowledgeBase *-- "0..*" Passage
+}
+
+' =====================================================================
+package "Apprentissage continu" #FEFCE8 {
+  class "DetecteurDerive\n<<module drift_detector>>" as Drift {
+    + psi(ref, cur, bins) : float
+    + compare(reference, features, scores) : dict
+    + novelty(ref_ae, cur_ae, min_window) : dict
+  }
+  class Config {
+    + min_new_labels : int
+    + drift_psi : float
+    + novelty_rate : float
+    + cooldown_h : int
+    + interval_s : int
+  }
+  class "Planificateur\n<<module scheduler>>" as Scheduler {
+    + collect(engine) : dict
+    + decide(signals, cfg) : dict
+    + run_training(engine, trigger, reasons)
+    + cycle(engine, cfg)
+  }
+  class "Reentrainement\n<<module retrain>>" as Retrain {
+    + load_history() : DataFrame
+    + load_production(engine) : DataFrame
+    + train_challenger(table) : HybridEnsemble
+    + run(engine, dry_run, quick, force) : dict
+    + promote(candidate)
+    + register(engine, version, status, report)
+  }
+  Scheduler *-- Config
+  Scheduler ..> Drift : lit les signaux
+  Scheduler ..> Retrain : déclenche
+  Scheduler ..> RetrainState : enregistre
+  Scheduler ..> RetrainEvent : crée
+  Retrain ..> HybridEnsemble : entraîne
+  Retrain ..> ModelRegistry : enregistre
+}
+
+' =====================================================================
+' Relations transverses
+UnifiedTransaction ..> RedisFeatureStore : soumis au scoring
+RedisFeatureStore ..> HybridScorer : vecteur normalisé
+HybridScorer ..> DecisionPolicy : probabilité
+DecisionPolicy ..> Laws : règles physiques
+DecisionPolicy ..> Analyzer : message joint
+HybridScorer ..> CaseMemory : cas similaires
+HybridScorer ..> KnowledgeBase : passages explicatifs
+DecisionPolicy ..> ScoredTransaction : résultat persisté
+
+@enduml

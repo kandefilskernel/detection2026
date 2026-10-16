@@ -1,0 +1,50 @@
+@startuml activite_traitement_alerte
+' Diagramme d'activité : processus cible — de la notation en temps réel au verdict de l'analyste
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam activity {
+  BackgroundColor #EEF4FF
+  BorderColor #2563EB
+}
+title Processus cible — détection en temps réel et traitement d'une alerte
+
+|Institution (opérateur, banque)|
+start
+:Recevoir l'ordre du client;
+:Soumettre l'opération à l'API\n(avant exécution);
+|Système de détection|
+:Authentifier la clé d'API\net convertir au format commun;
+:Mettre à jour le profil du client\net calculer les 58 variables;
+:Évaluer les lois physiques;
+:Calculer la probabilité de fraude\n(modèle hybride) et le type probable;
+:Choisir l'action de coût minimal\npuis appliquer les règles métier;
+fork
+  :Renvoyer la décision\n(APPROVE / VERIFY / BLOCK);
+fork again
+  :Publier l'événement (Kafka);
+end fork
+|Institution (opérateur, banque)|
+if (Décision ?) then (APPROVE)
+  :Exécuter l'opération;
+  stop
+elseif (VERIFY) then
+  :Demander une confirmation\nau client (PIN, OTP);
+else (BLOCK)
+  :Refuser l'opération;
+endif
+|Système de détection|
+:Ouvrir un dossier d'alerte;
+:Prévenir le client (SMS)\net l'équipe (e-mail si CRITIQUE);
+:Écrire le journal d'audit chaîné;
+|Analyste anti-fraude|
+:Prendre en charge le dossier\n(statut EN_COURS);
+:Consulter l'explication :\nSHAP, branches, physique,\ncas similaires, procédure;
+if (Fraude avérée ?) then (oui)
+  :Clore en FRAUDE_CONFIRMEE\navec une note obligatoire;
+else (non)
+  :Clore en FAUX_POSITIF\navec une note obligatoire;
+endif
+|Système de détection|
+:Enregistrer l'étiquette\npour l'apprentissage continu;
+stop
+@enduml

@@ -7,6 +7,12 @@ Sources d'étiquettes :
     - transactions « mûres » sans plainte après MATURITY_DAYS jours = 0 (pratique des
       émetteurs : une fraude non signalée après ce délai est rare ; bruit assumé).
 
+Pondération par la CONFIANCE de l'étiquette : un verdict vérifié (analyste, plainte, file de revue) pèse
+VERIFIED_LABEL_WEIGHT fois une étiquette supposée (« mûre ») ou historique. Les verdicts sont rares, récents et
+portent sur les cas difficiles ; sans ce poids, ils seraient noyés dans les « 0 » supposés, dont certains sont
+des fraudes jamais signalées. Le poids s'applique à XGBoost et au méta-apprenant (le LSTM et l'autoencodeur,
+entraînés par échantillonnage, n'en tiennent pas compte).
+
 Découpage TEMPOREL (aucune fuite du futur vers le passé) :
     fit         historique d'entraînement du champion + 1ʳᵉ moitié de la production
     early_stop  tranche d'arrêt précoce historique
@@ -52,6 +58,7 @@ PROCESSED = Path("ml/data/processed")
 MATURITY_DAYS = float(os.getenv("LABEL_MATURITY_DAYS", "7"))
 MIN_LABELED = int(os.getenv("RETRAIN_MIN_LABELED", "2000"))
 MIN_FRAUDS = int(os.getenv("RETRAIN_MIN_FRAUDS", "30"))
+VERIFIED_LABEL_WEIGHT = float(os.getenv("VERIFIED_LABEL_WEIGHT", "3"))
 
 
 def log(msg: str) -> None:
@@ -70,6 +77,7 @@ def load_history() -> pd.DataFrame:
     h["part"] = np.select([h["timestamp"] < pd.Timestamp(b["early_stop_from"]),
                            h["timestamp"] < pd.Timestamp(b["val_from"])], ["fit", "early_stop"], "val")
     h["champion_proba"] = np.nan
+    h["verified"] = False
     return h.rename(columns={"is_fraud": "y"})
 
 
@@ -86,6 +94,7 @@ def load_production(engine) -> pd.DataFrame:
     horizon = p["timestamp"].max() - pd.Timedelta(days=MATURITY_DAYS)
     matured = p["label"].isna() & (p["timestamp"] <= horizon)
     p["y"] = np.where(p["label"].notna(), p["label"], np.where(matured, 0, -1))
+    p["verified"] = p["label"].notna()
     p = p[p["y"] >= 0].drop(columns="label").reset_index(drop=True)
     # découpage temporel de la production : 50 % fit, 20 % val, 30 % évaluation
     q = p["timestamp"].rank(pct=True, method="first")
@@ -94,19 +103,21 @@ def load_production(engine) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------- entraînement
-def train_challenger(table: pd.DataFrame, seed: int = 42, quick: bool = False):
+def train_challenger(table: pd.DataFrame, seed: int = 42, quick: bool = False,
+                     verified_weight: float = VERIFIED_LABEL_WEIGHT):
     table = table.sort_values("timestamp", kind="mergesort").reset_index(drop=True)
     prep = json.loads((ARTIFACTS / "preprocessing.json").read_text(encoding="utf-8"))
     scaler = joblib.load(ARTIFACTS / "scaler.pkl")          # figé (cohérence avec Redis)
     X = np.clip(scaler.transform(table[FEATURE_NAMES].to_numpy(np.float32)),
                 -prep["clip"], prep["clip"]).astype(np.float32)
     y = table["y"].to_numpy(np.int8)
+    w = np.where(table["verified"].to_numpy(bool), verified_weight, 1.0)
     seq = build_sequence_index(table["user_id"], prep["seq_len"])
     idx = {k: np.flatnonzero(table["part"].to_numpy() == k) for k in ("fit", "early_stop", "val", "eval")}
     log(f"lignes : " + ", ".join(f"{k}={len(v):,}" for k, v in idx.items()))
 
     xgb_m = train_xgboost_branch(X[idx["fit"]], y[idx["fit"]], X[idx["early_stop"]], y[idx["early_stop"]],
-                                 200 if quick else 600, seed, record_curves=True)
+                                 200 if quick else 600, seed, record_curves=True, sample_weight=w[idx["fit"]])
     fit, es = idx["fit"], idx["early_stop"]
     ae = train_autoencoder_branch(X[fit][y[fit] == 0], X[es][y[es] == 0], epochs=3 if quick else 30,
                                   seed=seed, log=lambda m: None)
@@ -114,7 +125,7 @@ def train_challenger(table: pd.DataFrame, seed: int = 42, quick: bool = False):
                              seed=seed, log=lambda m: None)
     ens = HybridEnsemble(xgb_m, lstm, ae)
     S_val = ens.branch_scores(X, seq, idx["val"])
-    ens.meta = build_meta_learner().fit(S_val, y[idx["val"]])
+    ens.meta = build_meta_learner().fit(S_val, y[idx["val"]], logreg__sample_weight=w[idx["val"]])
     ens.threshold = best_f1_threshold(y[idx["val"]], ens.meta.predict_proba(S_val)[:, 1])
     p_eval = ens.predict_proba(X, seq, idx["eval"])
     ref_rows = np.random.default_rng(seed).choice(idx["fit"], size=min(10_000, len(idx["fit"])), replace=False)
@@ -135,7 +146,9 @@ def run(engine, dry_run: bool = False, quick: bool = False, force: bool = False)
     prod = load_production(engine)
     n_lab = len(prod)
     n_fraud = int(prod["y"].sum()) if n_lab else 0
-    log(f"production étiquetée : {n_lab:,} transactions dont {n_fraud} fraudes")
+    n_verified = int(prod["verified"].sum()) if n_lab else 0
+    log(f"production étiquetée : {n_lab:,} transactions dont {n_fraud} fraudes ; {n_verified:,} verdicts vérifiés "
+        f"(poids {VERIFIED_LABEL_WEIGHT:g}), {n_lab - n_verified:,} étiquettes supposées (poids 1)")
     if not force and (n_lab < MIN_LABELED or n_fraud < MIN_FRAUDS):
         return {"status": "IGNORE", "reason": f"pas assez d'étiquettes ({n_lab} / {n_fraud} fraudes)"}
 
@@ -173,6 +186,7 @@ def run(engine, dry_run: bool = False, quick: bool = False, force: bool = False)
         promote(cand)
     report = {"status": status, "version": version, "champion": m_champ, "challenger": m_chal,
               "n_labeled_production": n_lab, "n_frauds_production": n_fraud,
+              "n_verified_production": n_verified, "verified_label_weight": VERIFIED_LABEL_WEIGHT,
               "diagnostics": {k: (v["verdict"] if isinstance(v, dict) else v) for k, v in diag.items()},
               **({"reason": blocked} if blocked else {}),
               "duration_s": round(time.perf_counter() - t0, 1), "candidate_dir": str(cand)}
@@ -212,7 +226,9 @@ def register(engine, version: str, status: str, report: dict) -> None:
                    "m": json.dumps({"champion": report["champion"], "challenger": report["challenger"],
                                     "diagnostics": report.get("diagnostics")}),
                    "t": json.dumps({"n_labeled_production": report["n_labeled_production"],
-                                    "n_frauds_production": report["n_frauds_production"]})})
+                                    "n_frauds_production": report["n_frauds_production"],
+                                    "n_verified_production": report.get("n_verified_production"),
+                                    "verified_label_weight": report.get("verified_label_weight")})})
     uri = os.getenv("MLFLOW_TRACKING_URI")
     if uri:
         try:

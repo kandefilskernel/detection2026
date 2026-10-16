@@ -1,0 +1,1021 @@
+{
+  "protocole": {
+    "figé": "2019-2021",
+    "cumulatif": "tout l'historique jusqu'à l'année précédente",
+    "glissant": "3 dernières années",
+    "n_estimators": 600,
+    "n_boot": 300
+  },
+  "entraînement_figé": {
+    "lignes": 121061,
+    "arrêt_précoce": 16819
+  },
+  "années": {
+    "2022": {
+      "n": 80066,
+      "n_fraud": 1164,
+      "lignes_entraînement": {
+        "cumulatif": 121061,
+        "glissant": 121061
+      },
+      "fraudes_par_typologie": {
+        "SIM_SWAP": 335,
+        "SOCIAL_ENGINEERING": 212,
+        "SMURFING": 197,
+        "AGENT_FRAUD": 129,
+        "ACCOUNT_TAKEOVER": 98,
+        "CARD_TESTING": 70,
+        "CNP_FRAUD": 67,
+        "TOPUP_DRAIN": 56
+      },
+      "figé": {
+        "pr_auc": {
+          "point": 0.9858,
+          "ci95": [
+            0.9794,
+            0.9908
+          ]
+        },
+        "recall_at_1pct_fpr": {
+          "point": 0.9983,
+          "ci95": [
+            0.9955,
+            1.0
+          ]
+        },
+        "operational": {
+          "n": 80066,
+          "n_fraud": 1164,
+          "pr_auc": 0.9858,
+          "roc_auc": 0.9997,
+          "recall_at_1pct_fpr": 0.9983,
+          "precision": 0.9754,
+          "recall": 0.8866,
+          "f1": 0.9289,
+          "false_positive_rate": 0.00033
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 98,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 129,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 70,
+            "recall": 0.9857
+          },
+          "CNP_FRAUD": {
+            "n": 67,
+            "recall": 1.0
+          },
+          "SIM_SWAP": {
+            "n": 335,
+            "recall": 0.9881
+          },
+          "SMURFING": {
+            "n": 197,
+            "recall": 0.9239
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 212,
+            "recall": 0.4717
+          },
+          "TOPUP_DRAIN": {
+            "n": 56,
+            "recall": 1.0
+          }
+        }
+      },
+      "cumulatif": {
+        "pr_auc": {
+          "point": 0.9858,
+          "ci95": [
+            0.9794,
+            0.9908
+          ],
+          "diff_vs_reference": 0.0,
+          "diff_ci95": [
+            0.0,
+            0.0
+          ],
+          "diff_p_value": 2.0,
+          "significant_95": false
+        },
+        "recall_at_1pct_fpr": {
+          "point": 0.9983,
+          "ci95": [
+            0.9955,
+            1.0
+          ],
+          "diff_vs_reference": 0.0,
+          "diff_ci95": [
+            0.0,
+            0.0
+          ],
+          "diff_p_value": 2.0,
+          "significant_95": false
+        },
+        "operational": {
+          "n": 80066,
+          "n_fraud": 1164,
+          "pr_auc": 0.9858,
+          "roc_auc": 0.9997,
+          "recall_at_1pct_fpr": 0.9983,
+          "precision": 0.9754,
+          "recall": 0.8866,
+          "f1": 0.9289,
+          "false_positive_rate": 0.00033
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 98,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 129,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 70,
+            "recall": 0.9857
+          },
+          "CNP_FRAUD": {
+            "n": 67,
+            "recall": 1.0
+          },
+          "SIM_SWAP": {
+            "n": 335,
+            "recall": 0.9881
+          },
+          "SMURFING": {
+            "n": 197,
+            "recall": 0.9239
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 212,
+            "recall": 0.4717
+          },
+          "TOPUP_DRAIN": {
+            "n": 56,
+            "recall": 1.0
+          }
+        }
+      },
+      "glissant": {
+        "pr_auc": {
+          "point": 0.9858,
+          "ci95": [
+            0.9794,
+            0.9908
+          ],
+          "diff_vs_reference": 0.0,
+          "diff_ci95": [
+            0.0,
+            0.0
+          ],
+          "diff_p_value": 2.0,
+          "significant_95": false
+        },
+        "recall_at_1pct_fpr": {
+          "point": 0.9983,
+          "ci95": [
+            0.9955,
+            1.0
+          ],
+          "diff_vs_reference": 0.0,
+          "diff_ci95": [
+            0.0,
+            0.0
+          ],
+          "diff_p_value": 2.0,
+          "significant_95": false
+        },
+        "operational": {
+          "n": 80066,
+          "n_fraud": 1164,
+          "pr_auc": 0.9858,
+          "roc_auc": 0.9997,
+          "recall_at_1pct_fpr": 0.9983,
+          "precision": 0.9754,
+          "recall": 0.8866,
+          "f1": 0.9289,
+          "false_positive_rate": 0.00033
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 98,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 129,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 70,
+            "recall": 0.9857
+          },
+          "CNP_FRAUD": {
+            "n": 67,
+            "recall": 1.0
+          },
+          "SIM_SWAP": {
+            "n": 335,
+            "recall": 0.9881
+          },
+          "SMURFING": {
+            "n": 197,
+            "recall": 0.9239
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 212,
+            "recall": 0.4717
+          },
+          "TOPUP_DRAIN": {
+            "n": 56,
+            "recall": 1.0
+          }
+        }
+      }
+    },
+    "2023": {
+      "n": 104108,
+      "n_fraud": 1449,
+      "lignes_entraînement": {
+        "cumulatif": 195878,
+        "glissant": 160337
+      },
+      "fraudes_par_typologie": {
+        "SIM_SWAP": 461,
+        "SOCIAL_ENGINEERING": 295,
+        "ACCOUNT_TAKEOVER": 203,
+        "SMURFING": 185,
+        "AGENT_FRAUD": 141,
+        "CARD_TESTING": 65,
+        "CNP_FRAUD": 51,
+        "TOPUP_DRAIN": 48
+      },
+      "figé": {
+        "pr_auc": {
+          "point": 0.9835,
+          "ci95": [
+            0.978,
+            0.988
+          ]
+        },
+        "recall_at_1pct_fpr": {
+          "point": 0.9979,
+          "ci95": [
+            0.9955,
+            1.0
+          ]
+        },
+        "operational": {
+          "n": 104108,
+          "n_fraud": 1449,
+          "pr_auc": 0.9835,
+          "roc_auc": 0.9997,
+          "recall_at_1pct_fpr": 0.9979,
+          "precision": 0.9748,
+          "recall": 0.8792,
+          "f1": 0.9245,
+          "false_positive_rate": 0.00032
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 203,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 141,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 65,
+            "recall": 1.0
+          },
+          "CNP_FRAUD": {
+            "n": 51,
+            "recall": 1.0
+          },
+          "SIM_SWAP": {
+            "n": 461,
+            "recall": 1.0
+          },
+          "SMURFING": {
+            "n": 185,
+            "recall": 0.8973
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 295,
+            "recall": 0.4712
+          },
+          "TOPUP_DRAIN": {
+            "n": 48,
+            "recall": 1.0
+          }
+        }
+      },
+      "cumulatif": {
+        "pr_auc": {
+          "point": 0.9911,
+          "ci95": [
+            0.987,
+            0.9937
+          ],
+          "diff_vs_reference": 0.0076,
+          "diff_ci95": [
+            0.0049,
+            0.0108
+          ],
+          "diff_p_value": 0.0033,
+          "significant_95": true
+        },
+        "recall_at_1pct_fpr": {
+          "point": 0.9993,
+          "ci95": [
+            0.9977,
+            1.0
+          ],
+          "diff_vs_reference": 0.0014,
+          "diff_ci95": [
+            0.0,
+            0.0033
+          ],
+          "diff_p_value": 0.2867,
+          "significant_95": false
+        },
+        "operational": {
+          "n": 104108,
+          "n_fraud": 1449,
+          "pr_auc": 0.9911,
+          "roc_auc": 0.9998,
+          "recall_at_1pct_fpr": 0.9993,
+          "precision": 0.9295,
+          "recall": 0.9641,
+          "f1": 0.9465,
+          "false_positive_rate": 0.00103
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 203,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 141,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 65,
+            "recall": 1.0
+          },
+          "CNP_FRAUD": {
+            "n": 51,
+            "recall": 1.0
+          },
+          "SIM_SWAP": {
+            "n": 461,
+            "recall": 1.0
+          },
+          "SMURFING": {
+            "n": 185,
+            "recall": 0.9838
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 295,
+            "recall": 0.8339
+          },
+          "TOPUP_DRAIN": {
+            "n": 48,
+            "recall": 1.0
+          }
+        }
+      },
+      "glissant": {
+        "pr_auc": {
+          "point": 0.9913,
+          "ci95": [
+            0.9875,
+            0.9938
+          ],
+          "diff_vs_reference": 0.0078,
+          "diff_ci95": [
+            0.005,
+            0.0113
+          ],
+          "diff_p_value": 0.0033,
+          "significant_95": true
+        },
+        "recall_at_1pct_fpr": {
+          "point": 0.9986,
+          "ci95": [
+            0.9962,
+            1.0
+          ],
+          "diff_vs_reference": 0.0007,
+          "diff_ci95": [
+            -0.0019,
+            0.0027
+          ],
+          "diff_p_value": 0.8467,
+          "significant_95": false
+        },
+        "operational": {
+          "n": 104108,
+          "n_fraud": 1449,
+          "pr_auc": 0.9913,
+          "roc_auc": 0.9999,
+          "recall_at_1pct_fpr": 0.9986,
+          "precision": 0.93,
+          "recall": 0.9627,
+          "f1": 0.9461,
+          "false_positive_rate": 0.00102
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 203,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 141,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 65,
+            "recall": 1.0
+          },
+          "CNP_FRAUD": {
+            "n": 51,
+            "recall": 1.0
+          },
+          "SIM_SWAP": {
+            "n": 461,
+            "recall": 1.0
+          },
+          "SMURFING": {
+            "n": 185,
+            "recall": 0.9892
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 295,
+            "recall": 0.8237
+          },
+          "TOPUP_DRAIN": {
+            "n": 48,
+            "recall": 1.0
+          }
+        }
+      }
+    },
+    "2024": {
+      "n": 134554,
+      "n_fraud": 1916,
+      "lignes_entraînement": {
+        "cumulatif": 293104,
+        "glissant": 215626
+      },
+      "fraudes_par_typologie": {
+        "SOCIAL_ENGINEERING": 461,
+        "SIM_SWAP": 445,
+        "SMURFING": 374,
+        "ACCOUNT_TAKEOVER": 259,
+        "AGENT_FRAUD": 143,
+        "CNP_FRAUD": 124,
+        "CARD_TESTING": 58,
+        "TOPUP_DRAIN": 52
+      },
+      "figé": {
+        "pr_auc": {
+          "point": 0.9729,
+          "ci95": [
+            0.9616,
+            0.9822
+          ]
+        },
+        "recall_at_1pct_fpr": {
+          "point": 0.9911,
+          "ci95": [
+            0.9836,
+            0.9979
+          ]
+        },
+        "operational": {
+          "n": 134554,
+          "n_fraud": 1916,
+          "pr_auc": 0.9729,
+          "roc_auc": 0.9994,
+          "recall_at_1pct_fpr": 0.9911,
+          "precision": 0.9656,
+          "recall": 0.8361,
+          "f1": 0.8962,
+          "false_positive_rate": 0.00043
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 259,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 143,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 58,
+            "recall": 1.0
+          },
+          "CNP_FRAUD": {
+            "n": 124,
+            "recall": 1.0
+          },
+          "SIM_SWAP": {
+            "n": 445,
+            "recall": 1.0
+          },
+          "SMURFING": {
+            "n": 374,
+            "recall": 0.8476
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 461,
+            "recall": 0.4425
+          },
+          "TOPUP_DRAIN": {
+            "n": 52,
+            "recall": 1.0
+          }
+        }
+      },
+      "cumulatif": {
+        "pr_auc": {
+          "point": 0.9958,
+          "ci95": [
+            0.9934,
+            0.9975
+          ],
+          "diff_vs_reference": 0.0229,
+          "diff_ci95": [
+            0.0143,
+            0.0333
+          ],
+          "diff_p_value": 0.0033,
+          "significant_95": true
+        },
+        "recall_at_1pct_fpr": {
+          "point": 0.9979,
+          "ci95": [
+            0.9958,
+            0.9995
+          ],
+          "diff_vs_reference": 0.0068,
+          "diff_ci95": [
+            0.0011,
+            0.0137
+          ],
+          "diff_p_value": 0.02,
+          "significant_95": true
+        },
+        "operational": {
+          "n": 134554,
+          "n_fraud": 1916,
+          "pr_auc": 0.9958,
+          "roc_auc": 0.9999,
+          "recall_at_1pct_fpr": 0.9979,
+          "precision": 0.9749,
+          "recall": 0.9723,
+          "f1": 0.9736,
+          "false_positive_rate": 0.00036
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 259,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 143,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 58,
+            "recall": 1.0
+          },
+          "CNP_FRAUD": {
+            "n": 124,
+            "recall": 1.0
+          },
+          "SIM_SWAP": {
+            "n": 445,
+            "recall": 1.0
+          },
+          "SMURFING": {
+            "n": 374,
+            "recall": 0.9893
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 461,
+            "recall": 0.8937
+          },
+          "TOPUP_DRAIN": {
+            "n": 52,
+            "recall": 1.0
+          }
+        }
+      },
+      "glissant": {
+        "pr_auc": {
+          "point": 0.9957,
+          "ci95": [
+            0.9934,
+            0.9974
+          ],
+          "diff_vs_reference": 0.0228,
+          "diff_ci95": [
+            0.0142,
+            0.0329
+          ],
+          "diff_p_value": 0.0033,
+          "significant_95": true
+        },
+        "recall_at_1pct_fpr": {
+          "point": 0.9979,
+          "ci95": [
+            0.9955,
+            0.9995
+          ],
+          "diff_vs_reference": 0.0068,
+          "diff_ci95": [
+            0.001,
+            0.0134
+          ],
+          "diff_p_value": 0.02,
+          "significant_95": true
+        },
+        "operational": {
+          "n": 134554,
+          "n_fraud": 1916,
+          "pr_auc": 0.9957,
+          "roc_auc": 0.9999,
+          "recall_at_1pct_fpr": 0.9979,
+          "precision": 0.9596,
+          "recall": 0.9786,
+          "f1": 0.969,
+          "false_positive_rate": 0.0006
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 259,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 143,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 58,
+            "recall": 1.0
+          },
+          "CNP_FRAUD": {
+            "n": 124,
+            "recall": 1.0
+          },
+          "SIM_SWAP": {
+            "n": 445,
+            "recall": 1.0
+          },
+          "SMURFING": {
+            "n": 374,
+            "recall": 0.9866
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 461,
+            "recall": 0.9219
+          },
+          "TOPUP_DRAIN": {
+            "n": 52,
+            "recall": 1.0
+          }
+        }
+      }
+    },
+    "2025": {
+      "n": 175360,
+      "n_fraud": 2355,
+      "lignes_entraînement": {
+        "cumulatif": 419145,
+        "glissant": 281265
+      },
+      "fraudes_par_typologie": {
+        "SOCIAL_ENGINEERING": 610,
+        "SIM_SWAP": 585,
+        "ACCOUNT_TAKEOVER": 398,
+        "SMURFING": 303,
+        "AGENT_FRAUD": 168,
+        "CNP_FRAUD": 128,
+        "TOPUP_DRAIN": 82,
+        "CARD_TESTING": 81
+      },
+      "figé": {
+        "pr_auc": {
+          "point": 0.9681,
+          "ci95": [
+            0.9586,
+            0.9763
+          ]
+        },
+        "recall_at_1pct_fpr": {
+          "point": 0.9885,
+          "ci95": [
+            0.9806,
+            0.9952
+          ]
+        },
+        "operational": {
+          "n": 175360,
+          "n_fraud": 2355,
+          "pr_auc": 0.9681,
+          "roc_auc": 0.9994,
+          "recall_at_1pct_fpr": 0.9885,
+          "precision": 0.958,
+          "recall": 0.834,
+          "f1": 0.8917,
+          "false_positive_rate": 0.0005
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 398,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 168,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 81,
+            "recall": 1.0
+          },
+          "CNP_FRAUD": {
+            "n": 128,
+            "recall": 0.9844
+          },
+          "SIM_SWAP": {
+            "n": 585,
+            "recall": 1.0
+          },
+          "SMURFING": {
+            "n": 303,
+            "recall": 0.8746
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 610,
+            "recall": 0.4246
+          },
+          "TOPUP_DRAIN": {
+            "n": 82,
+            "recall": 1.0
+          }
+        }
+      },
+      "cumulatif": {
+        "pr_auc": {
+          "point": 0.998,
+          "ci95": [
+            0.997,
+            0.9987
+          ],
+          "diff_vs_reference": 0.0299,
+          "diff_ci95": [
+            0.022,
+            0.0385
+          ],
+          "diff_p_value": 0.0033,
+          "significant_95": true
+        },
+        "recall_at_1pct_fpr": {
+          "point": 1.0,
+          "ci95": [
+            0.9992,
+            1.0
+          ],
+          "diff_vs_reference": 0.0115,
+          "diff_ci95": [
+            0.0048,
+            0.0189
+          ],
+          "diff_p_value": 0.0033,
+          "significant_95": true
+        },
+        "operational": {
+          "n": 175360,
+          "n_fraud": 2355,
+          "pr_auc": 0.998,
+          "roc_auc": 1.0,
+          "recall_at_1pct_fpr": 1.0,
+          "precision": 0.9554,
+          "recall": 0.9911,
+          "f1": 0.9729,
+          "false_positive_rate": 0.00063
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 398,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 168,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 81,
+            "recall": 1.0
+          },
+          "CNP_FRAUD": {
+            "n": 128,
+            "recall": 0.9922
+          },
+          "SIM_SWAP": {
+            "n": 585,
+            "recall": 1.0
+          },
+          "SMURFING": {
+            "n": 303,
+            "recall": 1.0
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 610,
+            "recall": 0.9672
+          },
+          "TOPUP_DRAIN": {
+            "n": 82,
+            "recall": 1.0
+          }
+        }
+      },
+      "glissant": {
+        "pr_auc": {
+          "point": 0.998,
+          "ci95": [
+            0.9971,
+            0.9987
+          ],
+          "diff_vs_reference": 0.0299,
+          "diff_ci95": [
+            0.0219,
+            0.0386
+          ],
+          "diff_p_value": 0.0033,
+          "significant_95": true
+        },
+        "recall_at_1pct_fpr": {
+          "point": 1.0,
+          "ci95": [
+            0.9992,
+            1.0
+          ],
+          "diff_vs_reference": 0.0115,
+          "diff_ci95": [
+            0.0048,
+            0.0192
+          ],
+          "diff_p_value": 0.0033,
+          "significant_95": true
+        },
+        "operational": {
+          "n": 175360,
+          "n_fraud": 2355,
+          "pr_auc": 0.998,
+          "roc_auc": 1.0,
+          "recall_at_1pct_fpr": 1.0,
+          "precision": 0.9527,
+          "recall": 0.9924,
+          "f1": 0.9721,
+          "false_positive_rate": 0.00067
+        },
+        "rappel_par_typologie": {
+          "ACCOUNT_TAKEOVER": {
+            "n": 398,
+            "recall": 1.0
+          },
+          "AGENT_FRAUD": {
+            "n": 168,
+            "recall": 1.0
+          },
+          "CARD_TESTING": {
+            "n": 81,
+            "recall": 1.0
+          },
+          "CNP_FRAUD": {
+            "n": 128,
+            "recall": 1.0
+          },
+          "SIM_SWAP": {
+            "n": 585,
+            "recall": 1.0
+          },
+          "SMURFING": {
+            "n": 303,
+            "recall": 1.0
+          },
+          "SOCIAL_ENGINEERING": {
+            "n": 610,
+            "recall": 0.9721
+          },
+          "TOPUP_DRAIN": {
+            "n": 82,
+            "recall": 0.9878
+          }
+        }
+      }
+    }
+  },
+  "ensemble_2022_2025": {
+    "figé": {
+      "pr_auc": {
+        "point": 0.976,
+        "ci95": [
+          0.97,
+          0.9817
+        ]
+      },
+      "recall_at_1pct_fpr": {
+        "point": 0.994,
+        "ci95": [
+          0.9902,
+          0.997
+        ]
+      }
+    },
+    "cumulatif": {
+      "pr_auc": {
+        "point": 0.993,
+        "ci95": [
+          0.9912,
+          0.9945
+        ],
+        "diff_vs_reference": 0.017,
+        "diff_ci95": [
+          0.0124,
+          0.0218
+        ],
+        "diff_p_value": 0.0033,
+        "significant_95": true
+      },
+      "recall_at_1pct_fpr": {
+        "point": 0.999,
+        "ci95": [
+          0.9981,
+          0.9996
+        ],
+        "diff_vs_reference": 0.005,
+        "diff_ci95": [
+          0.0023,
+          0.0085
+        ],
+        "diff_p_value": 0.0033,
+        "significant_95": true
+      }
+    },
+    "glissant": {
+      "pr_auc": {
+        "point": 0.993,
+        "ci95": [
+          0.9912,
+          0.9945
+        ],
+        "diff_vs_reference": 0.017,
+        "diff_ci95": [
+          0.0124,
+          0.0218
+        ],
+        "diff_p_value": 0.0033,
+        "significant_95": true
+      },
+      "recall_at_1pct_fpr": {
+        "point": 0.9987,
+        "ci95": [
+          0.9978,
+          0.9995
+        ],
+        "diff_vs_reference": 0.0047,
+        "diff_ci95": [
+          0.002,
+          0.0083
+        ],
+        "diff_p_value": 0.0033,
+        "significant_95": true
+      }
+    }
+  },
+  "tendance": {
+    "écart_cumulatif_moins_figé_par_année": {
+      "2022": 0.0,
+      "2023": 0.0076,
+      "2024": 0.0229,
+      "2025": 0.0299
+    },
+    "pente_par_an": 0.0105
+  },
+  "verdict": "CONFIRMÉE",
+  "récence_vs_volume": "la fenêtre glissante fait aussi bien que le cumulatif : la récence compte plus que le volume",
+  "durée_s": 1790
+}

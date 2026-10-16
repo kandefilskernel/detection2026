@@ -1,18 +1,25 @@
 """Gestion des dossiers : les analystes confirment ou infirment les alertes.
-Chaque verdict devient une étiquette (label) qui alimente le réentraînement."""
+Chaque verdict devient une étiquette (label) qui alimente le réentraînement.
+
+Principe des quatre yeux : déclarer « faux positif » (donc débloquer) une transaction BLOQUÉE d'au moins
+FOUR_EYES_MIN_USD crée une demande de déblocage ; elle n'est appliquée qu'après validation par un second utilisateur,
+superviseur ou administrateur, différent du demandeur. Une fraude débloquée par erreur coûte le montant entier."""
 from __future__ import annotations
 
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
 from app.events import Publisher, get_publisher
-from app.security import ROLE_RANK, get_current_user
-from shared.database.models import BackofficeUser, Case, ScoredTransaction
+from app.security import ROLE_RANK, get_current_user, require_role
+from shared.database.models import BackofficeUser, Case, ScoredTransaction, UnblockRequest
 from shared.nlp.analyzer import analyze
 
 router = APIRouter(prefix="/cases", tags=["dossiers"])
@@ -34,6 +41,7 @@ class CaseOut(BaseModel):
     action: str
     fraud_type: str | None
     status: str
+    review_reason: str
     assigned_to: int | None
     resolution_note: str | None
     resolved_by: int | None
@@ -47,6 +55,51 @@ class CaseUpdate(BaseModel):
     status: str | None = Field(None, pattern="^(OUVERT|EN_COURS|FRAUDE_CONFIRMEE|FAUX_POSITIF)$")
     assigned_to: int | None = None
     resolution_note: str | None = Field(None, max_length=2000)
+
+
+def needs_four_eyes(c: Case, label: int) -> bool:
+    return label == 0 and c.action == "BLOCK" and c.amount_usd >= settings.FOUR_EYES_MIN_USD
+
+
+def _pending(db: Session, case_id: int) -> UnblockRequest | None:
+    return db.scalar(select(UnblockRequest).where(UnblockRequest.case_id == case_id,
+                                                  UnblockRequest.status == "EN_ATTENTE"))
+
+
+def request_unblock(db: Session, c: Case, user: BackofficeUser, note: str, pub: Publisher) -> JSONResponse:
+    """Enregistre la demande (dossier « en cours ») au lieu d'appliquer le verdict : 202 Accepted."""
+    if c.id is None:              # dossier créé par cette revue : il lui faut un identifiant
+        db.flush()
+    req = UnblockRequest(case_id=c.id, transaction_id=c.transaction_id, amount_usd=c.amount_usd,
+                         requested_by=user.id, note=note)
+    db.add(req)
+    c.status = "EN_COURS"
+    c.assigned_to = c.assigned_to or user.id
+    db.commit()
+    pub.audit(user.email, "DEBLOCAGE_DEMANDE", "case", str(c.id),
+              {"request_id": req.id, "transaction_id": c.transaction_id, "montant_usd": c.amount_usd})
+    return JSONResponse(status_code=202, content=jsonable_encoder({
+        "four_eyes": True, "request": unblock_out(req, db),
+        "detail": f"déblocage de {c.amount_usd:,.2f} USD : validation d'un second superviseur requise"}))
+
+
+def apply_verdict(db: Session, c: Case, label: int, user: BackofficeUser, pub: Publisher) -> None:
+    c.status = "FRAUDE_CONFIRMEE" if label else "FAUX_POSITIF"
+    c.resolved_by, c.resolved_at = user.id, datetime.now(timezone.utc)
+    db.execute(update(ScoredTransaction)
+               .where(ScoredTransaction.transaction_id == c.transaction_id, ScoredTransaction.tx_time == c.tx_time)
+               .values(label=label, labeled_at=c.resolved_at))
+    pub.feedback(c.transaction_id, label, user.email, c.id)
+
+
+def unblock_out(r: UnblockRequest, db: Session) -> dict:
+    who = {u.id: u for u in db.scalars(select(BackofficeUser).where(
+        BackofficeUser.id.in_([x for x in (r.requested_by, r.decided_by) if x])))}
+    return {"id": r.id, "case_id": r.case_id, "transaction_id": r.transaction_id, "amount_usd": r.amount_usd,
+            "status": r.status, "note": r.note, "requested_at": r.requested_at, "decided_at": r.decided_at,
+            "decision_note": r.decision_note, "requested_by": r.requested_by, "decided_by": r.decided_by,
+            "requested_by_name": who[r.requested_by].full_name if r.requested_by in who else None,
+            "decided_by_name": who[r.decided_by].full_name if r.decided_by in who else None}
 
 
 @router.get("")
@@ -100,6 +153,8 @@ def customer_complaint(transaction_id: str, body: Complaint, db: Session = Depen
     if from_text:
         tx.fraud_type = c.fraud_type = "SOCIAL_ENGINEERING"
     c.status, c.resolution_note = "FRAUDE_CONFIRMEE", f"Plainte client : {body.note}"
+    if tx.action == "APPROVE":          # fraude laissée passer : sinon le dossier reste celui de l'alerte
+        c.review_reason = "PLAINTE"
     c.resolved_by, c.resolved_at, c.assigned_to = user.id, now, c.assigned_to or user.id
     tx.label, tx.labeled_at = 1, now
     db.commit()
@@ -112,9 +167,14 @@ def customer_complaint(transaction_id: str, body: Complaint, db: Session = Depen
     return c
 
 
+REVIEW_REASONS = ("REVUE", "INCERTITUDE", "NOUVEAUTE", "RESEAU", "TEMOIN")
+
+
 class Review(BaseModel):
     verdict: str = Field(pattern="^(FRAUDE|LEGITIME)$")
     note: str = Field(min_length=5, max_length=2000)
+    # cas proposé par la file de revue (GET /feedback/queue) : sa source est conservée pour mesurer son apport
+    reason: str = Field("REVUE", pattern=f"^({'|'.join(REVIEW_REASONS)})$")
 
 
 @router.post("/review/{transaction_id}", response_model=CaseOut, status_code=201)
@@ -132,11 +192,18 @@ def review_transaction(transaction_id: str, body: Review, db: Session = Depends(
     if c is None:
         c = Case(transaction_id=tx.transaction_id, tx_time=tx.tx_time, user_id=tx.user_id, channel=tx.channel,
                  tx_type=tx.tx_type, amount_usd=tx.amount_usd, fraud_probability=tx.fraud_probability,
-                 risk_level=tx.risk_level, action=tx.action, fraud_type=tx.fraud_type)
+                 risk_level=tx.risk_level, action=tx.action, fraud_type=tx.fraud_type,
+                 # transaction approuvée : le dossier naît de la revue (motif choisi), pas d'une alerte
+                 review_reason=body.reason if tx.action == "APPROVE" else "ALERTE")
         db.add(c)
     elif c.status in FINAL:
         raise HTTPException(409, "dossier déjà clos")
     fraud = body.verdict == "FRAUDE"
+    if c.id is not None and _pending(db, c.id):
+        raise HTTPException(409, "un déblocage de ce dossier attend déjà sa validation")
+    if not fraud and needs_four_eyes(c, 0):
+        c.resolution_note = f"Revue d'analyste : {body.note}"
+        return request_unblock(db, c, user, body.note, pub)
     c.status = "FRAUDE_CONFIRMEE" if fraud else "FAUX_POSITIF"
     c.resolution_note = f"Revue d'analyste : {body.note}"
     c.resolved_by, c.resolved_at, c.assigned_to = user.id, now, c.assigned_to or user.id
@@ -144,8 +211,49 @@ def review_transaction(transaction_id: str, body: Review, db: Session = Depends(
     db.commit()
     pub.feedback(tx.transaction_id, int(fraud), user.email, c.id)
     pub.audit(user.email, "REVUE_ANALYSTE", "transaction", tx.transaction_id,
-              {"case_id": c.id, "verdict": body.verdict, "decision_modele": tx.action})
+              {"case_id": c.id, "verdict": body.verdict, "decision_modele": tx.action, "motif": c.review_reason})
     return c
+
+
+@router.get("/unblock-requests")
+def list_unblock_requests(status: str | None = Query("EN_ATTENTE", pattern="^(EN_ATTENTE|APPROUVEE|REJETEE)$"),
+                          limit: int = Query(50, ge=1, le=200), db: Session = Depends(get_db),
+                          user: BackofficeUser = Depends(get_current_user)):
+    q = select(UnblockRequest).order_by(UnblockRequest.requested_at.desc()).limit(limit)
+    if status:
+        q = q.where(UnblockRequest.status == status)
+    rows = db.scalars(q).all()
+    return {"min_amount_usd": settings.FOUR_EYES_MIN_USD,
+            "can_decide": ROLE_RANK[user.role] >= ROLE_RANK["SUPERVISEUR"],
+            "items": [unblock_out(r, db) for r in rows]}
+
+
+class UnblockDecision(BaseModel):
+    approve: bool
+    note: str = Field(min_length=5, max_length=2000)
+
+
+@router.post("/unblock-requests/{request_id}/decision")
+def decide_unblock(request_id: int, body: UnblockDecision, db: Session = Depends(get_db),
+                   user: BackofficeUser = Depends(require_role("SUPERVISEUR")), pub: Publisher = Depends(get_publisher)):
+    r = db.get(UnblockRequest, request_id, with_for_update=True)
+    if r is None:
+        raise HTTPException(404, "demande introuvable")
+    if r.status != "EN_ATTENTE":
+        raise HTTPException(409, "demande déjà traitée")
+    if r.requested_by == user.id:
+        raise HTTPException(403, "quatre yeux : la demande doit être validée par un autre utilisateur")
+    c = db.get(Case, r.case_id, with_for_update=True)
+    r.status = "APPROUVEE" if body.approve else "REJETEE"
+    r.decided_by, r.decided_at, r.decision_note = user.id, datetime.now(timezone.utc), body.note
+    if body.approve:
+        apply_verdict(db, c, 0, user, pub)
+        c.resolution_note = f"{c.resolution_note or ''}\nDéblocage validé par {user.full_name} : {body.note}".strip()
+    db.commit()
+    pub.audit(user.email, "DEBLOCAGE_VALIDE" if body.approve else "DEBLOCAGE_REFUSE", "case", str(c.id),
+              {"request_id": r.id, "demandeur": r.requested_by, "transaction_id": r.transaction_id,
+               "montant_usd": r.amount_usd})
+    return unblock_out(r, db)
 
 
 @router.get("/{case_id}", response_model=CaseOut)
@@ -178,18 +286,19 @@ def update_case(case_id: int, body: CaseUpdate, db: Session = Depends(get_db),
             raise HTTPException(409, f"transition {c.status} -> {body.status} interdite")
         if body.status in FINAL and not (body.resolution_note or c.resolution_note):
             raise HTTPException(422, "une note de résolution est obligatoire")
+        if _pending(db, c.id):
+            raise HTTPException(409, "un déblocage de ce dossier attend sa validation par un second superviseur")
+        if body.status in FINAL and needs_four_eyes(c, FINAL[body.status]):
+            if body.resolution_note is not None:
+                c.resolution_note = body.resolution_note
+            return request_unblock(db, c, user, body.resolution_note or c.resolution_note, pub)
         changes["status"] = [c.status, body.status]
-        c.status = body.status
         if body.status in FINAL:
-            c.resolved_by, c.resolved_at = user.id, datetime.now(timezone.utc)
-            label = FINAL[body.status]
-            db.execute(update(ScoredTransaction)
-                       .where(ScoredTransaction.transaction_id == c.transaction_id,
-                              ScoredTransaction.tx_time == c.tx_time)
-                       .values(label=label, labeled_at=c.resolved_at))
-            pub.feedback(c.transaction_id, label, user.email, c.id)
-        elif c.assigned_to is None:
-            c.assigned_to = user.id
+            apply_verdict(db, c, FINAL[body.status], user, pub)
+        else:
+            c.status = body.status
+            if c.assigned_to is None:
+                c.assigned_to = user.id
 
     if body.resolution_note is not None:
         c.resolution_note = body.resolution_note
