@@ -49,7 +49,8 @@ progressive des comptes, la croissance de l'activité, le lancement de la carte 
 USD/CDF par année (`shared/utils/fx.py`, valeurs approximatives) et des voyages légitimes physiquement cohérents.
 ```powershell
 python ml/generator/generate_synthetic_data.py --multi-year                    # -> ml/data/raw_2019_2025 (n'écrase rien)
-.\scriptsun_pipeline.ps1 -MultiYear                                          # régénère dans ml/data/raw et réentraîne tout
+.\scripts
+un_pipeline.ps1 -MultiYear                                          # régénère dans ml/data/raw et réentraîne tout
 ```
 Le jeu d'origine (180 jours, 2025) reste reproductible à l'identique sans `--multi-year`.
 
@@ -228,11 +229,11 @@ modélise pas de biais social : ces écarts viennent des comportements simulés 
 refaire sur les données réelles avant toute conclusion.
 
 ### Sécurité du back-office
-- **Double authentification (TOTP, RFC 6238)** : obligatoire pour les rôles de `REQUIRE_2FA_ROLES` (superviseur et
-  administrateur par défaut) ; à la première connexion, l'écran **Sécurité du compte** guide l'activation (Google
-  Authenticator, Microsoft Authenticator, FreeOTP). Secret chiffré en base, code déjà utilisé refusé. Téléphone perdu :
-  un administrateur réinitialise la 2FA depuis **Utilisateurs**. Pour une démonstration sans téléphone :
-  `REQUIRE_2FA_ROLES=` dans `.env`.
+- **Double authentification (TOTP, RFC 6238)** : facultative par défaut, chacun l'active dans **Sécurité du compte**
+  (Google Authenticator, Microsoft Authenticator, FreeOTP). Pour la rendre obligatoire, en production :
+  `REQUIRE_2FA_ROLES=SUPERVISEUR,ADMIN` dans `.env` ; ces rôles sont alors guidés vers l'activation à la connexion.
+  Secret chiffré en base, code déjà utilisé refusé. Téléphone perdu : un administrateur réinitialise la 2FA depuis
+  **Utilisateurs**.
 - **Verrouillage** : `MAX_FAILED_LOGINS` échecs consécutifs (5) bloquent le compte `LOCKOUT_MINUTES` minutes (15) ;
   un administrateur peut le déverrouiller.
 - **Quatre yeux** : déclarer « faux positif » une transaction **bloquée** d'au moins `FOUR_EYES_MIN_USD` (500 USD) crée

@@ -17,8 +17,9 @@ class Settings(BaseSettings):
     # Mémoire de cas du RAG (index construit par `python -m ml.rag.case_index`)
     RAG_INDEX_PATH: str = "ml/artifacts/case_index.npz"
     RAG_EXTRA_CASES: int = 2000       # verdicts d'analystes récents ajoutés à la mémoire
-    # Sécurité : rôles tenus d'activer la double authentification (vide = facultative pour tous)
-    REQUIRE_2FA_ROLES: str = "SUPERVISEUR,ADMIN"
+    # Sécurité : rôles tenus d'activer la double authentification. Vide (par défaut) = facultative pour tous,
+    # activable par chacun dans « Sécurité du compte » ; en production : "SUPERVISEUR,ADMIN"
+    REQUIRE_2FA_ROLES: str = ""
     TOTP_ENCRYPTION_KEY: str = ""     # clé Fernet ; vide = dérivée de JWT_SECRET_KEY
     MAX_FAILED_LOGINS: int = 5        # échecs consécutifs avant verrouillage
     LOCKOUT_MINUTES: int = 15
