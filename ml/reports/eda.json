@@ -1,0 +1,745 @@
+{
+  "quality": {
+    "n_rows": 631968,
+    "n_columns": 34,
+    "period": [
+      "2019-01-01 00:25:59",
+      "2025-12-31 23:45:15"
+    ],
+    "duplicate_ids": 0,
+    "non_positive_amounts": 0,
+    "null_timestamps": 0,
+    "negative_balances": 0,
+    "failed_share": 0.009839105777507722,
+    "n_users": 500,
+    "n_agents_used": 800,
+    "n_merchants_used": 900,
+    "n_devices": 687,
+    "missing": {
+      "card_id": {
+        "n": 598515,
+        "share": 0.9470653577396324
+      },
+      "counterparty_id": {
+        "n": 304262,
+        "share": 0.48145159248569547
+      },
+      "merchant_id": {
+        "n": 530897,
+        "share": 0.8400694338953871
+      },
+      "merchant_category": {
+        "n": 530897,
+        "share": 0.8400694338953871
+      },
+      "merchant_country": {
+        "n": 530897,
+        "share": 0.8400694338953871
+      },
+      "agent_id": {
+        "n": 443227,
+        "share": 0.7013440553952098
+      },
+      "ip_country": {
+        "n": 438175,
+        "share": 0.6933499797458099
+      }
+    },
+    "structural_missing_by_type": {
+      "counterparty_id": {
+        "AIRTIME": 0.0,
+        "BILL_PAYMENT": 1.0,
+        "CARD_PURCHASE": 1.0,
+        "CARD_TOPUP": 1.0,
+        "CASH_IN": 1.0,
+        "CASH_OUT": 1.0,
+        "MERCHANT_PAYMENT": 1.0,
+        "P2P_RECEIVE": 0.0,
+        "P2P_SEND": 0.0
+      },
+      "merchant_id": {
+        "AIRTIME": 1.0,
+        "BILL_PAYMENT": 0.0,
+        "CARD_PURCHASE": 0.0,
+        "CARD_TOPUP": 1.0,
+        "CASH_IN": 1.0,
+        "CASH_OUT": 1.0,
+        "MERCHANT_PAYMENT": 0.0,
+        "P2P_RECEIVE": 1.0,
+        "P2P_SEND": 1.0
+      },
+      "agent_id": {
+        "AIRTIME": 1.0,
+        "BILL_PAYMENT": 1.0,
+        "CARD_PURCHASE": 1.0,
+        "CARD_TOPUP": 1.0,
+        "CASH_IN": 0.0,
+        "CASH_OUT": 0.0,
+        "MERCHANT_PAYMENT": 1.0,
+        "P2P_RECEIVE": 1.0,
+        "P2P_SEND": 1.0
+      },
+      "ip_country": {
+        "AIRTIME": 0.6110552763819096,
+        "BILL_PAYMENT": 0.608617166212534,
+        "CARD_PURCHASE": 0.0,
+        "CARD_TOPUP": 0.0,
+        "CASH_IN": 1.0,
+        "CASH_OUT": 1.0,
+        "MERCHANT_PAYMENT": 0.6075358579342794,
+        "P2P_RECEIVE": 0.6086304872851257,
+        "P2P_SEND": 0.6083567452362677
+      },
+      "card_id": {
+        "AIRTIME": 1.0,
+        "BILL_PAYMENT": 1.0,
+        "CARD_PURCHASE": 0.0,
+        "CARD_TOPUP": 0.0,
+        "CASH_IN": 1.0,
+        "CASH_OUT": 1.0,
+        "MERCHANT_PAYMENT": 1.0,
+        "P2P_RECEIVE": 1.0,
+        "P2P_SEND": 1.0
+      }
+    }
+  },
+  "balance": {
+    "fraud_rate": 0.01333295356726923,
+    "n_fraud": 8426,
+    "ratio_legit_per_fraud": 74.00213624495608,
+    "naive_accuracy": 0.9866670464327307
+  },
+  "by_year": [
+    {
+      "year": 2019,
+      "n": 35541,
+      "frauds": 371,
+      "rate": 0.010438648321656679,
+      "usd": 1588228.56
+    },
+    {
+      "year": 2020,
+      "n": 41937,
+      "frauds": 442,
+      "rate": 0.010539618952237881,
+      "usd": 1871911.86
+    },
+    {
+      "year": 2021,
+      "n": 60402,
+      "frauds": 729,
+      "rate": 0.012069136783550214,
+      "usd": 2643633.09
+    },
+    {
+      "year": 2022,
+      "n": 80066,
+      "frauds": 1164,
+      "rate": 0.014538006144930433,
+      "usd": 3766148.23
+    },
+    {
+      "year": 2023,
+      "n": 104108,
+      "frauds": 1449,
+      "rate": 0.013918238752065163,
+      "usd": 4910983.43
+    },
+    {
+      "year": 2024,
+      "n": 134554,
+      "frauds": 1916,
+      "rate": 0.014239636131218692,
+      "usd": 6514604.4
+    },
+    {
+      "year": 2025,
+      "n": 175360,
+      "frauds": 2355,
+      "rate": 0.013429516423357664,
+      "usd": 8218630.54
+    }
+  ],
+  "by_channel": [
+    {
+      "group": "MOBILE_MONEY",
+      "n": 598515,
+      "share": 0.9470653577396324,
+      "frauds": 7404,
+      "fraud_rate": 0.012370617277762463
+    },
+    {
+      "group": "VISA_VIRTUAL",
+      "n": 33453,
+      "share": 0.05293464226036761,
+      "frauds": 1022,
+      "fraud_rate": 0.03055032433563507
+    }
+  ],
+  "by_operator": [
+    {
+      "group": "VODACOM",
+      "n": 319549,
+      "share": 0.5056411084105524,
+      "frauds": 4662,
+      "fraud_rate": 0.0145893118113341
+    },
+    {
+      "group": "AIRTEL",
+      "n": 180649,
+      "share": 0.28585149881006633,
+      "frauds": 2195,
+      "fraud_rate": 0.012150634656156414
+    },
+    {
+      "group": "ORANGE",
+      "n": 131770,
+      "share": 0.20850739277938124,
+      "frauds": 1569,
+      "fraud_rate": 0.011907110875009487
+    }
+  ],
+  "by_tx_type": [
+    {
+      "group": "P2P_RECEIVE",
+      "n": 140780,
+      "share": 0.22276444376930477,
+      "frauds": 1479,
+      "fraud_rate": 0.010505753658190084
+    },
+    {
+      "group": "P2P_SEND",
+      "n": 134191,
+      "share": 0.2123382829510355,
+      "frauds": 4092,
+      "fraud_rate": 0.030493848320677242
+    },
+    {
+      "group": "CASH_IN",
+      "n": 96852,
+      "share": 0.15325459516937567,
+      "frauds": 0,
+      "fraud_rate": 0.0
+    },
+    {
+      "group": "CASH_OUT",
+      "n": 91889,
+      "share": 0.14540134943541444,
+      "frauds": 1501,
+      "fraud_rate": 0.01633492583443067
+    },
+    {
+      "group": "AIRTIME",
+      "n": 52735,
+      "share": 0.08344568079396425,
+      "frauds": 0,
+      "fraud_rate": 0.0
+    },
+    {
+      "group": "MERCHANT_PAYMENT",
+      "n": 52708,
+      "share": 0.0834029571117525,
+      "frauds": 332,
+      "fraud_rate": 0.006298854063899218
+    },
+    {
+      "group": "BILL_PAYMENT",
+      "n": 29360,
+      "share": 0.04645804850878525,
+      "frauds": 0,
+      "fraud_rate": 0.0
+    },
+    {
+      "group": "CARD_PURCHASE",
+      "n": 19003,
+      "share": 0.030069560484075143,
+      "frauds": 939,
+      "fraud_rate": 0.04941325053938852
+    },
+    {
+      "group": "CARD_TOPUP",
+      "n": 14450,
+      "share": 0.02286508177629247,
+      "frauds": 83,
+      "fraud_rate": 0.005743944636678201
+    }
+  ],
+  "by_access": [
+    {
+      "group": "USSD",
+      "n": 249434,
+      "share": 0.3946940351410198,
+      "frauds": 2901,
+      "fraud_rate": 0.011630331069541441
+    },
+    {
+      "group": "APP",
+      "n": 193793,
+      "share": 0.3066500202541901,
+      "frauds": 4024,
+      "fraud_rate": 0.020764423895599946
+    },
+    {
+      "group": "AGENT",
+      "n": 188741,
+      "share": 0.2986559446047901,
+      "frauds": 1501,
+      "fraud_rate": 0.007952697082244982
+    }
+  ],
+  "by_device": [
+    {
+      "group": "smartphone",
+      "n": 364994,
+      "share": 0.5775513950073421,
+      "frauds": 5210,
+      "fraud_rate": 0.01427420724724242
+    },
+    {
+      "group": "feature_phone",
+      "n": 266974,
+      "share": 0.42244860499265785,
+      "frauds": 3216,
+      "fraud_rate": 0.012046116850329995
+    }
+  ],
+  "by_province": [
+    {
+      "group": "Kinshasa",
+      "n": 236916,
+      "share": 0.37488607018076864,
+      "frauds": 2992,
+      "fraud_rate": 0.012628948656907934
+    },
+    {
+      "group": "Haut-Katanga",
+      "n": 106121,
+      "share": 0.16792147703681198,
+      "frauds": 1209,
+      "fraud_rate": 0.011392655553566212
+    },
+    {
+      "group": "Nord-Kivu",
+      "n": 82468,
+      "share": 0.13049394906071193,
+      "frauds": 1066,
+      "fraud_rate": 0.01292622593005772
+    },
+    {
+      "group": "Lualaba",
+      "n": 50521,
+      "share": 0.07994233885260013,
+      "frauds": 549,
+      "fraud_rate": 0.010866768274578888
+    },
+    {
+      "group": "Sud-Kivu",
+      "n": 49739,
+      "share": 0.0787049344270596,
+      "frauds": 705,
+      "fraud_rate": 0.014173988218500574
+    },
+    {
+      "group": "Kasai-Oriental",
+      "n": 36757,
+      "share": 0.05816275507620639,
+      "frauds": 770,
+      "fraud_rate": 0.020948390782708055
+    },
+    {
+      "group": "Kongo-Central",
+      "n": 28747,
+      "share": 0.04548806268671832,
+      "frauds": 507,
+      "fraud_rate": 0.017636622951960206
+    },
+    {
+      "group": "Ituri",
+      "n": 21726,
+      "share": 0.03437832295306092,
+      "frauds": 359,
+      "fraud_rate": 0.016523980484212466
+    },
+    {
+      "group": "Tshopo",
+      "n": 18973,
+      "share": 0.03002208972606208,
+      "frauds": 269,
+      "fraud_rate": 0.014178042481420967
+    }
+  ],
+  "by_segment": [
+    {
+      "group": "commercant",
+      "n": 234988,
+      "share": 0.3718352827991291,
+      "frauds": 1513,
+      "fraud_rate": 0.006438626653275912
+    },
+    {
+      "group": "informel",
+      "n": 138931,
+      "share": 0.2198386627170996,
+      "frauds": 2591,
+      "fraud_rate": 0.01864954545781719
+    },
+    {
+      "group": "salarie",
+      "n": 134657,
+      "share": 0.21307566205883843,
+      "frauds": 1872,
+      "fraud_rate": 0.013901988013991104
+    },
+    {
+      "group": "etudiant",
+      "n": 60576,
+      "share": 0.09585295457997874,
+      "frauds": 1115,
+      "fraud_rate": 0.018406629688325408
+    },
+    {
+      "group": "diaspora_beneficiaire",
+      "n": 40665,
+      "share": 0.06434661248670819,
+      "frauds": 850,
+      "fraud_rate": 0.02090249600393459
+    },
+    {
+      "group": "agriculteur",
+      "n": 22151,
+      "share": 0.03505082535824599,
+      "frauds": 485,
+      "fraud_rate": 0.021895174032775043
+    }
+  ],
+  "by_kyc": [
+    {
+      "group": "2",
+      "n": 304899,
+      "share": 0.48245955491417286,
+      "frauds": 3641,
+      "fraud_rate": 0.011941659369168151
+    },
+    {
+      "group": "1",
+      "n": 228488,
+      "share": 0.36154995189629857,
+      "frauds": 3436,
+      "fraud_rate": 0.015037988865936066
+    },
+    {
+      "group": "3",
+      "n": 98581,
+      "share": 0.1559904931895286,
+      "frauds": 1349,
+      "fraud_rate": 0.013684178492813016
+    }
+  ],
+  "episodes": {
+    "n_episodes": 3028,
+    "ops_per_episode_mean": 2.782694848084544,
+    "ops_per_episode_max": 15,
+    "usd_per_episode_median": 142.46,
+    "by_type": {
+      "ACCOUNT_TAKEOVER": {
+        "episodes": 371,
+        "ops_mean": 2.9973045822102424,
+        "usd_median": 186.83999999999997
+      },
+      "AGENT_FRAUD": {
+        "episodes": 604,
+        "ops_mean": 1.4701986754966887,
+        "usd_median": 150.0
+      },
+      "CARD_TESTING": {
+        "episodes": 42,
+        "ops_mean": 8.619047619047619,
+        "usd_median": 27.43
+      },
+      "CNP_FRAUD": {
+        "episodes": 195,
+        "ops_mean": 2.082051282051282,
+        "usd_median": 60.349999999999994
+      },
+      "SIM_SWAP": {
+        "episodes": 627,
+        "ops_mean": 3.54066985645933,
+        "usd_median": 268.54
+      },
+      "SMURFING": {
+        "episodes": 129,
+        "ops_mean": 10.34108527131783,
+        "usd_median": 1553.0
+      },
+      "SOCIAL_ENGINEERING": {
+        "episodes": 977,
+        "ops_mean": 1.893551688843398,
+        "usd_median": 88.0
+      },
+      "TOPUP_DRAIN": {
+        "episodes": 83,
+        "ops_mean": 3.0602409638554215,
+        "usd_median": 537.33
+      }
+    }
+  },
+  "type_by_year": {
+    "2019": {
+      "ACCOUNT_TAKEOVER": 32,
+      "AGENT_FRAUD": 92,
+      "CARD_TESTING": 0,
+      "CNP_FRAUD": 0,
+      "SIM_SWAP": 83,
+      "SMURFING": 99,
+      "SOCIAL_ENGINEERING": 65,
+      "TOPUP_DRAIN": 0
+    },
+    "2020": {
+      "ACCOUNT_TAKEOVER": 49,
+      "AGENT_FRAUD": 124,
+      "CARD_TESTING": 0,
+      "CNP_FRAUD": 0,
+      "SIM_SWAP": 110,
+      "SMURFING": 68,
+      "SOCIAL_ENGINEERING": 91,
+      "TOPUP_DRAIN": 0
+    },
+    "2021": {
+      "ACCOUNT_TAKEOVER": 73,
+      "AGENT_FRAUD": 91,
+      "CARD_TESTING": 88,
+      "CNP_FRAUD": 36,
+      "SIM_SWAP": 201,
+      "SMURFING": 108,
+      "SOCIAL_ENGINEERING": 116,
+      "TOPUP_DRAIN": 16
+    },
+    "2022": {
+      "ACCOUNT_TAKEOVER": 98,
+      "AGENT_FRAUD": 129,
+      "CARD_TESTING": 70,
+      "CNP_FRAUD": 67,
+      "SIM_SWAP": 335,
+      "SMURFING": 197,
+      "SOCIAL_ENGINEERING": 212,
+      "TOPUP_DRAIN": 56
+    },
+    "2023": {
+      "ACCOUNT_TAKEOVER": 203,
+      "AGENT_FRAUD": 141,
+      "CARD_TESTING": 65,
+      "CNP_FRAUD": 51,
+      "SIM_SWAP": 461,
+      "SMURFING": 185,
+      "SOCIAL_ENGINEERING": 295,
+      "TOPUP_DRAIN": 48
+    },
+    "2024": {
+      "ACCOUNT_TAKEOVER": 259,
+      "AGENT_FRAUD": 143,
+      "CARD_TESTING": 58,
+      "CNP_FRAUD": 124,
+      "SIM_SWAP": 445,
+      "SMURFING": 374,
+      "SOCIAL_ENGINEERING": 461,
+      "TOPUP_DRAIN": 52
+    },
+    "2025": {
+      "ACCOUNT_TAKEOVER": 398,
+      "AGENT_FRAUD": 168,
+      "CARD_TESTING": 81,
+      "CNP_FRAUD": 128,
+      "SIM_SWAP": 585,
+      "SMURFING": 303,
+      "SOCIAL_ENGINEERING": 610,
+      "TOPUP_DRAIN": 82
+    }
+  },
+  "type_totals": {
+    "SIM_SWAP": 2220,
+    "SOCIAL_ENGINEERING": 1850,
+    "SMURFING": 1334,
+    "ACCOUNT_TAKEOVER": 1112,
+    "AGENT_FRAUD": 888,
+    "CNP_FRAUD": 406,
+    "CARD_TESTING": 362,
+    "TOPUP_DRAIN": 254
+  },
+  "amounts": {
+    "MOBILE_MONEY|legit": {
+      "median": 24.11,
+      "mean": 44.05653044859595,
+      "p95": 142.46,
+      "p99": 276.0,
+      "max": 1988.42,
+      "skew": 4.631730456163293,
+      "skew_log": -0.13868730589847628
+    },
+    "MOBILE_MONEY|fraud": {
+      "median": 95.0,
+      "mean": 259.5634954078876,
+      "p95": 1500.0,
+      "p99": 1500.0,
+      "max": 5000.0,
+      "skew": 4.154914353421494,
+      "skew_log": -0.18417953311393548
+    },
+    "VISA_VIRTUAL|legit": {
+      "median": 20.08,
+      "mean": 42.170242360704265,
+      "p95": 149.0,
+      "p99": 335.1200000000005,
+      "max": 1313.0,
+      "skew": 5.253325077343524,
+      "skew_log": 0.5717402516289372
+    },
+    "VISA_VIRTUAL|fraud": {
+      "median": 5.984999999999999,
+      "mean": 178.48247553816046,
+      "p95": 1131.0034999999996,
+      "p99": 2206.24659999999,
+      "max": 5000.0,
+      "skew": 5.393075342522089,
+      "skew_log": 0.7429474978484011
+    }
+  },
+  "hours": {
+    "night_share_legit": 0.033930352726841174,
+    "night_share_fraud": 0.290766674578685,
+    "fraud_rate_by_hour": {
+      "0": 0.04406538734896944,
+      "1": 0.10785015509424958,
+      "2": 0.1447090744648779,
+      "3": 0.13524854744996773,
+      "4": 0.17863321799307957,
+      "5": 0.08654416123295791,
+      "6": 0.02600409653575563,
+      "7": 0.013349455864570738,
+      "8": 0.010728259497665026,
+      "9": 0.008574464404853098,
+      "10": 0.008328078453543239,
+      "11": 0.008399849554933345,
+      "12": 0.009168008588298443,
+      "13": 0.009042065260123182,
+      "14": 0.00891036439400656,
+      "15": 0.009739539424058216,
+      "16": 0.00950621733645702,
+      "17": 0.00954762992713018,
+      "18": 0.008909322320060262,
+      "19": 0.008706245914304392,
+      "20": 0.010869972637655085,
+      "21": 0.010484073238023577,
+      "22": 0.012085441259134345,
+      "23": 0.01434012995742774
+    }
+  },
+  "weekday_fraud_rate": {
+    "0": 0.012428804803744095,
+    "1": 0.012896342170575,
+    "2": 0.01285102332222751,
+    "3": 0.014447689591222557,
+    "4": 0.014296867375817313,
+    "5": 0.012499766097191296,
+    "6": 0.014065283604390553
+  },
+  "income_note": "revenu mensuel déclaré : médiane 220 USD (clients)",
+  "per_user": {
+    "tx_min": 20,
+    "tx_median": 861.5,
+    "tx_max": 15013,
+    "users_with_fraud": 461,
+    "users": 500,
+    "share_users_with_fraud": 0.922,
+    "fraud_per_victim_median": 13.0
+  },
+  "counterparties": {
+    "n": 18396,
+    "shared_by_2plus_users": 13096,
+    "shared_with_fraud": 400
+  },
+  "correlations": {
+    "top_with_target": [
+      {
+        "feature": "device_n_users",
+        "r": 0.7015309807180753
+      },
+      {
+        "feature": "is_new_device",
+        "r": 0.4668045551876277
+      },
+      {
+        "feature": "log_device_prior_uses",
+        "r": -0.2935526774461052
+      },
+      {
+        "feature": "is_foreign_ip",
+        "r": 0.26218768763308026
+      },
+      {
+        "feature": "debit_count_1h",
+        "r": 0.22252170985699407
+      },
+      {
+        "feature": "tx_count_1h",
+        "r": 0.20411807725937967
+      },
+      {
+        "feature": "amount_ratio_user_mean",
+        "r": 0.1939530732997212
+      },
+      {
+        "feature": "is_new_counterparty",
+        "r": 0.1936736415681673
+      },
+      {
+        "feature": "counterparty_n_users",
+        "r": 0.15941835935881657
+      },
+      {
+        "feature": "amount_to_kyc_limit",
+        "r": 0.15835529689343977
+      },
+      {
+        "feature": "night_unusual",
+        "r": 0.14893725024833396
+      },
+      {
+        "feature": "is_night",
+        "r": 0.14684581052095882
+      }
+    ],
+    "redundant_pairs": [
+      {
+        "a": "night_unusual",
+        "b": "is_night",
+        "r": 0.9990012151050838
+      },
+      {
+        "a": "amount_ratio_user_mean",
+        "b": "amount_zscore_user",
+        "r": 0.9387564885675209
+      },
+      {
+        "a": "debit_count_1h",
+        "b": "tx_count_1h",
+        "r": 0.8408569314263729
+      },
+      {
+        "a": "tx_count_1h",
+        "b": "log_secs_since_last_tx",
+        "r": -0.6522666364059297
+      },
+      {
+        "a": "device_n_users",
+        "b": "is_new_device",
+        "r": 0.5548161779536855
+      },
+      {
+        "a": "debit_count_1h",
+        "b": "log_secs_since_last_tx",
+        "r": -0.5444143474261437
+      }
+    ],
+    "n_features": 58
+  }
+}
