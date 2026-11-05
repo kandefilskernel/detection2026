@@ -4,7 +4,7 @@
 
 Ce document couvre tout le mémoire, de l'introduction générale à la conclusion générale. Il est organisé comme le mémoire. Chaque question est suivie d'une réponse prête à dire à l'oral. Les chiffres viennent du mémoire corrigé.
 
-Conseil de travail. Apprenez d'abord la partie 0, puis la partie 7 (questions pièges). Les parties 1 à 6 servent à répondre en profondeur quand le jury creuse un point.
+Conseil de travail. Lisez d'abord la partie 8, qui explique clairement tous les concepts d'IA du mémoire, puis apprenez la partie 0 et la partie 7 (questions pièges). Les parties 1 à 6 servent à répondre en profondeur quand le jury creuse un point.
 
 ---
 
@@ -339,7 +339,230 @@ R. Je négocierais un accès à un échantillon anonymisé d'un opérateur pour 
 
 ---
 
-## 8. Glossaire express
+## 8. Comprendre les concepts d'IA du mémoire
+
+Cette partie explique, simplement et dans l'ordre logique, chaque concept d'intelligence artificielle utilisé dans le mémoire. Pour chacun, on trouve l'idée en une phrase, une image pour la comprendre, l'exemple du mémoire, la raison du choix et le piège à éviter à l'oral. Lisez-la du début à la fin au moins une fois, car chaque concept s'appuie sur le précédent.
+
+### 8.1 Les bases
+
+**Apprentissage automatique (machine learning)**
+- L'idée. Au lieu d'écrire des règles à la main, on montre des exemples à un programme, et il en déduit lui-même les règles.
+- L'image. Un enfant apprend à reconnaître un chien en voyant beaucoup de chiens, pas en lisant une définition.
+- Dans le mémoire. On montre au modèle des centaines de milliers de transactions déjà étiquetées « fraude » ou « légitime », et il apprend ce qui distingue les deux.
+- Le piège. Le modèle ne comprend rien, il repère des régularités statistiques. Si les données sont biaisées ou simulées, ses « règles » le sont aussi.
+
+**Apprentissage supervisé et non supervisé**
+- Supervisé. On donne au modèle les exemples et la bonne réponse (l'étiquette). Il apprend à la prédire. Dans le mémoire, ce sont la régression logistique, le Random Forest, XGBoost et le LSTM.
+- Non supervisé. On ne donne pas de bonne réponse. Le modèle apprend ce qui est « normal » et signale ce qui s'en écarte. Dans le mémoire, ce sont l'Isolation Forest et l'autoencodeur.
+- Pourquoi les deux. Le supervisé est précis sur les fraudes déjà vues. Le non supervisé peut signaler une fraude jamais vue, car il ne dépend pas d'exemples de fraude.
+- Le piège. Une fraude qui imite parfaitement le comportement normal n'est pas une anomalie. C'est pourquoi l'autoencodeur seul rate l'ingénierie sociale (rappel de 0,3 %).
+
+**Classification binaire**
+- L'idée. Répondre par oui ou non. Ici, fraude ou pas fraude.
+- Le modèle ne répond pas directement oui ou non. Il donne d'abord une probabilité entre 0 et 1, puis un seuil transforme cette probabilité en décision.
+
+**Variable (feature) et ingénierie des variables**
+- L'idée. Une variable est une information décrivant la transaction que le modèle peut utiliser, comme le montant, l'heure ou la nouveauté de l'appareil. L'ingénierie des variables consiste à les fabriquer intelligemment.
+- Dans le mémoire. 58 variables, dont la plupart mesurent un écart au comportement habituel du client plutôt qu'une valeur brute.
+- Pourquoi. Un montant de 200 USD est normal pour un commerçant et alarmant pour un étudiant. La même valeur brute n'a pas le même sens. La variable utile est « combien ce montant s'écarte de ce que ce client fait d'habitude ».
+- Le piège. Une bonne variable vaut souvent plus qu'un modèle sophistiqué. L'ablation (voir plus bas) le montre, car retirer les variables de contexte fait chuter la PR-AUC de 0,989 à 0,843.
+
+### 8.2 Préparer les données sans tricher
+
+**Découpage apprentissage, validation, test**
+- L'idée. On divise les données en trois parties. L'apprentissage sert à entraîner, la validation à régler (par exemple choisir le seuil), le test à juger une seule fois à la fin.
+- L'image. Un élève s'entraîne avec des exercices, révise avec un examen blanc, puis passe l'examen final dont il n'a jamais vu les questions.
+- Dans le mémoire. Découpage chronologique, avec un test du 13 décembre 2024 au 31 décembre 2025 (183 240 transactions dont 2 437 fraudes).
+- Pourquoi chronologique. En production, on prédit l'avenir avec le passé. Un tirage aléatoire mélangerait le futur dans l'apprentissage et donnerait des résultats trop beaux.
+- Le piège. Si l'on règle quelque chose sur le test, il n'est plus un vrai test. Le seuil du mémoire (0,538) est fixé sur la validation, jamais sur le test.
+
+**Fuite d'information (data leakage)**
+- L'idée. Donner au modèle, sans le vouloir, une information qu'il n'aurait pas en réalité au moment de décider.
+- Exemple. Calculer le « montant habituel » d'un client en incluant les opérations futures. Le modèle verrait l'avenir.
+- Dans le mémoire. Chaque variable n'utilise que le passé de la transaction, et le même code calcule les variables à l'entraînement et en production.
+
+**Normalisation**
+- L'idée. Ramener des variables d'échelles très différentes (un montant en dollars, un nombre d'opérations, une heure) à une échelle comparable, pour que le modèle ne favorise pas celles qui ont de grands nombres. On centre sur la moyenne et on divise par l'écart-type.
+- Surtout utile pour les réseaux de neurones et la régression logistique, moins pour les arbres.
+
+**Logarithme des montants et z-score**
+- Le problème. Les montants sont très asymétriques, avec beaucoup de petits montants et quelques très gros. En Mobile Money, la médiane légitime est de 24,11 USD et le 99e centile de 276 USD.
+- Le logarithme. Il rapproche les gros montants des petits et rend la distribution plus symétrique.
+- Le z-score. Il dit à combien d'écarts-types un montant se trouve de la moyenne habituelle du client. Un z-score de 0 veut dire « comme d'habitude », un z-score de 4 veut dire « très inhabituel pour cette personne ».
+- Dans le mémoire. L'écart logarithmique au montant habituel du client est l'une des variables phares.
+
+**Déséquilibre des classes**
+- Le problème. 1,33 % de fraudes, soit une fraude pour 74 opérations légitimes. Un modèle qui dit toujours « légitime » a 98,67 % d'exactitude et ne sert à rien.
+- Deux remèdes dans le mémoire. XGBoost donne à chaque fraude un poids d'environ 74 dans sa fonction de perte, donc une erreur sur une fraude coûte autant que 74 erreurs sur du légitime. Le LSTM, lui, ne garde que 30 % des opérations légitimes à chaque époque.
+- Le piège. L'exactitude (accuracy) est une mauvaise métrique ici. On utilise la PR-AUC.
+
+### 8.3 Les modèles, du plus simple au plus riche
+
+**Règles métier (système expert)**
+- L'idée. Des conditions écrites à la main, du type « si le montant dépasse un seuil, alors alerte ».
+- Dans le mémoire. Elles servent de référence statique, avec 0,2726 de PR-AUC, et de garde-fou en production, car elles ne peuvent que durcir une décision.
+- Force et faiblesse. Transparentes et auditables, mais elles ignorent l'individu et se contournent, par exemple en fractionnant sous un seuil.
+
+**Régression logistique**
+- L'idée. Un modèle linéaire qui combine les variables avec des poids, puis transforme le résultat en probabilité entre 0 et 1.
+- Pourquoi la garder. Simple, rapide, très explicable. C'est la référence « modèle classique ».
+- Limite. Elle ne capte que des relations linéaires, alors que la fraude combine des signaux de façon complexe.
+
+**Arbre de décision et Random Forest**
+- Arbre. Une suite de questions oui ou non (« le destinataire est-il nouveau ? le montant est-il supérieur à 3 fois l'habituel ? ») qui conduit à une décision.
+- Random Forest. On construit beaucoup d'arbres différents sur des échantillons aléatoires et on les fait voter. La moyenne de nombreux arbres est plus stable qu'un seul.
+
+**Boosting et XGBoost**
+- L'idée. Au lieu de construire les arbres en parallèle, on les construit l'un après l'autre. Chaque nouvel arbre se concentre sur les erreurs des précédents.
+- L'image. Une équipe où chaque nouveau membre est recruté pour corriger ce que les autres ratent.
+- Pourquoi c'est la référence. Sur des données en tableau, XGBoost est très performant, rapide et explicable. Dans le mémoire, il atteint 0,9895 de PR-AUC. Les études comme Hájek et al. le citent comme robuste pour les paiements mobiles.
+
+**Isolation Forest**
+- L'idée. Non supervisé. Il isole les points en coupant l'espace au hasard. Un point étrange est isolé en très peu de coupes, un point banal en demande beaucoup. Peu de coupes veut dire anomalie.
+- Résultat dans le mémoire. Il ne détecte que 39 % des fraudes, ce qui montre que la fraude n'est pas seulement « bizarre ».
+
+**Autoencodeur**
+- L'idée. Un réseau de neurones qui apprend à compresser puis reconstruire des données normales. Si on lui présente une opération anormale, il la reconstruit mal, et cette erreur de reconstruction sert de score d'anomalie.
+- L'image. Un copiste qui n'a recopié que des textes en français. Face à du chinois, il fait des fautes énormes, et ces fautes le trahissent.
+- Rôle dans l'hybride. Peu utile seul sur les fraudes connues, mais c'est la seule composante qui signale la nouveauté. Il réduit aussi les fausses alertes.
+
+**Réseau de neurones et LSTM**
+- Réseau de neurones. Des couches de petites unités de calcul qui transforment les données et apprennent leurs poids par essais successifs.
+- LSTM. Un réseau récurrent conçu pour lire des séquences, comme l'historique des opérations d'un client. Il possède une « mémoire » qui décide quoi retenir et quoi oublier.
+- Pourquoi dans le mémoire. Une fraude est souvent une dynamique, par exemple une escalade de montants ou une salve d'opérations. Un LSTM lit cette dynamique, qu'un résumé instantané décrit mal.
+
+**Attention**
+- L'idée. Le modèle apprend à pondérer l'importance de chaque opération passée. Il « regarde » davantage celles qui comptent pour la décision.
+- Intérêt. Les poids d'attention servent aussi d'explication, car ils montrent quelles opérations passées ont pesé.
+
+**Modèle hybride et empilement (stacking)**
+- L'idée. Combiner plusieurs modèles différents. Un méta-apprenant apprend à pondérer leurs sorties.
+- Dans le mémoire. XGBoost, LSTM et autoencodeur alimentent un méta-apprenant. Il leur attribue des coefficients de 1,69 pour XGBoost, 1,56 pour le LSTM et 0,46 pour l'autoencodeur.
+- Pourquoi ça marche. Les composantes ne se trompent pas sur les mêmes opérations. Sur 179 opérations où l'hybride et XGBoost divergent, l'hybride a raison 156 fois.
+- Le piège. Le gain en PR-AUC est modeste (0,006) mais il se traduit par 42 % de fausses alertes et 45 % de fraudes manquées en moins.
+
+### 8.4 Mesurer la qualité
+
+**Matrice de confusion et les quatre cas**
+Sur le jeu de test du mémoire (183 240 opérations dont 2 437 fraudes), le modèle hybride donne ceci.
+
+| | Fraude réelle | Légitime réelle |
+|---|---|---|
+| Alerte du modèle | 2 383 (vrais positifs) | 122 (faux positifs) |
+| Pas d'alerte | 54 (faux négatifs) | 180 681 (vrais négatifs) |
+
+**Précision, rappel, F1**
+- Précision. Parmi les alertes, combien sont de vraies fraudes. 2 383 sur 2 505, soit 95,1 %. Elle mesure la gêne causée aux honnêtes gens.
+- Rappel. Parmi les fraudes, combien sont détectées. 2 383 sur 2 437, soit 97,8 %. Il mesure les fraudes laissées passer.
+- F1. Une moyenne harmonique des deux. Elle est basse si l'un des deux est bas. Ici 0,964.
+- Le compromis. Monter le rappel baisse en général la précision. Le seuil règle ce compromis.
+
+**MCC (coefficient de Matthews)**
+- L'idée. Une note unique de 1 (parfait) à -1 qui tient compte des quatre cases de la matrice. Elle est robuste quand les classes sont déséquilibrées.
+- Dans le mémoire. 0,964 pour l'hybride, 0,766 pour l'autoencodeur seul, ce qui montre que sa bonne précision cachait des fraudes manquées.
+
+**Seuil de décision**
+- L'idée. Le modèle sort une probabilité. Le seuil dit à partir de quelle probabilité on déclenche l'alerte.
+- Dans le mémoire. 0,538, choisi pour maximiser le F1 sur la validation. Sur le test, le F1 varie de moins d'un point entre 0,45 et 0,75, donc le choix est robuste.
+
+**Courbe ROC et ROC-AUC contre courbe PR et PR-AUC**
+- ROC-AUC. Compare le taux de fraudes détectées au taux de fausses alertes sur tous les seuils. Avec très peu de fraudes, le taux de fausses alertes reste minuscule même avec beaucoup de faux positifs en valeur absolue, donc la ROC-AUC paraît toujours excellente.
+- PR-AUC. Compare la précision et le rappel sur tous les seuils. Elle se concentre sur la classe rare, donc elle punit vraiment les fausses alertes.
+- La preuve dans le mémoire. L'Isolation Forest a une ROC-AUC supérieure à 0,95 alors qu'il ne détecte que 39 % des fraudes. D'où le choix de la PR-AUC comme métrique principale.
+- Repère. Un modèle au hasard a une PR-AUC égale à la proportion de fraudes, ici 1,33 %. L'hybride est à 99,55 %.
+
+**Rappel à budget de fausses alertes fixé**
+- L'idée. Un opérateur ne peut traiter qu'un nombre limité d'alertes. On mesure donc le rappel quand on n'autorise que 0,05 %, 0,1 %, 0,5 % ou 1 % de fausses alertes.
+- Dans le mémoire. À 0,05 %, l'hybride détecte 96,9 % des fraudes contre 92,3 % pour XGBoost. L'avantage est le plus fort quand le budget est serré.
+
+**Calibration et score de Brier**
+- Calibration. Une probabilité est calibrée si, parmi les opérations notées 0,8, environ 80 % sont réellement des fraudes.
+- Score de Brier. La moyenne des carrés des écarts entre probabilité et réalité. Plus il est bas, mieux c'est. Ici 0,00077.
+- Nuance. Dans la zone intermédiaire, la probabilité prédite surestime le taux réel. Une opération notée 0,45 n'est pas fraudeuse une fois sur deux.
+
+### 8.5 Prouver que ce n'est pas le hasard
+
+**Intervalle de confiance et bootstrap**
+- Intervalle de confiance. Une fourchette dans laquelle se trouve probablement la vraie valeur. Un écart dont l'intervalle ne contient pas zéro est jugé réel.
+- Bootstrap. On refait le calcul des centaines de fois sur des échantillons tirés au hasard avec remise, et on observe comment le résultat varie.
+- Dans le mémoire. 1 000 tirages, et un tirage par client entier et non par transaction. Les transactions d'un même client se ressemblent, donc les mélanger gonflerait artificiellement la confiance.
+
+**Test de McNemar**
+- L'idée. On ne regarde que les opérations où deux modèles ne sont pas d'accord, et on teste si l'un a raison plus souvent que l'autre.
+- Dans le mémoire. « 156 contre 23 » veut dire que l'hybride a raison 156 fois et XGBoost 23 fois. L'écart est loin de ce que le hasard donnerait.
+- Différence avec le bootstrap. Le bootstrap porte sur une métrique globale. McNemar porte sur les décisions au seuil retenu.
+
+**Variance selon la graine**
+- L'idée. Les modèles contiennent du hasard (initialisation, tirages). On relance avec plusieurs graines pour voir si le résultat tient. Dans le mémoire, la PR-AUC du profilage varie de 0,9895 à plus ou moins 0,0004 seulement.
+
+**Ablation**
+- L'idée. Retirer une pièce et mesurer ce qu'on perd. Si la performance chute, la pièce est utile.
+- Dans le mémoire. Retirer une composante de l'hybride dégrade toujours le résultat. Retirer les variables contextuelles fait passer la PR-AUC de 0,989 à 0,843. Retirer les variables temporelles ne change presque rien, car elles sont redondantes.
+
+**Surapprentissage (overfitting)**
+- L'idée. Le modèle apprend par cœur les données d'entraînement, y compris leur bruit, et généralise mal.
+- L'image. Un élève qui mémorise les corrections au lieu de comprendre.
+- Détection. On compare la performance à l'entraînement et sur des données jamais vues. Dans le mémoire, XGBoost et le LSTM montrent un léger surapprentissage, sans perte de performance sur le test (écart de PR-AUC de 0,006).
+
+### 8.6 Les compléments du système
+
+**Explicabilité, SHAP et TreeSHAP**
+- Pourquoi. Dans la finance, il ne suffit pas de dire « fraude ». Il faut pouvoir justifier devant un client, un analyste ou le régulateur.
+- SHAP. Une méthode qui attribue à chaque variable sa contribution à la décision, en s'inspirant de la théorie des jeux. TreeSHAP en donne la valeur exacte pour les modèles à arbres.
+- Lecture. « L'appareil est nouveau, ce qui ajoute beaucoup de risque. Le montant est habituel, ce qui en retire un peu. »
+- Dans le mémoire. S'y ajoutent la contribution de chaque composante, les poids d'attention et les cas passés similaires.
+
+**Recherche de cas similaires**
+- L'idée. Retrouver, dans l'historique, les cas les plus proches de l'opération à juger et regarder leur verdict.
+- Dans le mémoire. Quand les cas proches confirment une alerte, elle est fondée dans 98 % des cas. Quand ils la contredisent, elle ne l'est plus que dans 60,9 %. C'est un contrôle de cohérence pour l'analyste.
+
+**Décision selon le coût**
+- L'idée. Choisir l'action (laisser passer, vérifier, bloquer) qui minimise la perte attendue, au lieu d'appliquer un seuil unique.
+- Pourquoi. Laisser passer une fraude coûte son montant. Bloquer un honnête coûte peu, vérifier coûte encore moins. Ces coûts sont asymétriques.
+- Résultat. La perte passe de 2 354 à 1 017 USD, avec 99,9 % des fraudes stoppées. Le résultat découle de l'asymétrie des coûts et ne dépend pas de la simulation, mais les montants de coût sont des hypothèses.
+
+**Lois physiques**
+- L'idée. Des contraintes que le monde réel impose. On ne peut pas faire Kinshasa puis le Haut-Katanga en trois minutes. Ces règles ne dépendent pas de l'apprentissage.
+- Intérêt. Elles couvrent ce que le modèle n'a jamais vu. Face à une attaque inédite, le modèle voit 0,3 % des cas, les lois physiques 100 %.
+
+**Analyse de réseau**
+- L'idée. Représenter comptes, appareils et destinataires comme un graphe. Un destinataire qui reçoit l'argent de plusieurs victimes est suspect, même si chaque victime paye seule.
+- Dans le mémoire. L'analyse récupère 54 fraudes que le modèle avait manquées, surtout de l'ingénierie sociale.
+
+**Traitement du langage (NLP) sur les messages**
+- L'idée. Repérer des signes de manipulation dans un texte, par mots-clés et indices pondérés, sans modèle de langage externe.
+- Résultat. Précision de 1,00 sans fausse alerte, rappel de 0,73. Le texte seul impose une vérification, jamais un blocage.
+
+**Apprentissage actif et boucle de retour**
+- L'idée. Faire revoir par les analystes les cas où le modèle hésite, puisque c'est là qu'une étiquette humaine apporte le plus.
+- Résultat. Les fraudes manquées passent de 73 à 38 avec les verdicts pondérés par trois.
+- Échantillon témoin. Un petit tirage aléatoire revu par des humains permet de mesurer sans biais le taux de fraudes manquées.
+
+**Dérive et apprentissage continu**
+- Dérive. Les données évoluent (nouveaux comportements, nouvelles fraudes) et le modèle figé se dégrade.
+- Apprentissage continu. On surveille la dérive et on réentraîne.
+- Champion et challenger. Le champion est le modèle en production. Le challenger est un candidat entraîné sur les données récentes. Il ne le remplace que s'il fait mieux sur la même période.
+- Attention à H5. Dans le mémoire, l'évolution des fraudes est un paramètre du générateur. Le résultat montre que la mise à jour fonctionne, pas que les fraudes réelles évolueront ainsi.
+
+**Équité**
+- L'idée. Vérifier que les erreurs ne pèsent pas plus sur certains groupes.
+- Dans le mémoire. Le rappel reste proche de 100 % partout, mais les clients modestes reçoivent 2,3 fois plus de fausses alertes et les agriculteurs 3,3 fois plus que les commerçants. Cela s'explique en partie par leur taux de fraude de base plus élevé, mais c'est un coût inégal à surveiller.
+
+### 8.7 Deux idées qui reviennent dans tout le mémoire
+
+**Données synthétiques, effet plafond et circularité**
+- Données synthétiques. Produites par un générateur. Utiles quand les données réelles sont inaccessibles, mais elles reflètent les hypothèses de celui qui les écrit.
+- Effet plafond. Quand la tâche est si facile que tous les modèles approchent de 100 %, la mesure ne permet plus de les distinguer. C'est le cas de la carte virtuelle simulée.
+- Circularité. Quand le résultat est en partie imposé par la manière dont les données ont été fabriquées. C'est le cas de H5.
+- Pourquoi c'est important. Ces trois notions expliquent pourquoi trois hypothèses sont « confirmées » et deux seulement « partiellement vérifiées », et pourquoi la validation sur données réelles est la première perspective.
+
+**Défense en profondeur**
+- L'idée. Ne pas compter sur une seule couche. Le modèle, les lois physiques, l'analyse de réseau, les règles et l'analyste se complètent. Chaque couche couvre les angles morts des autres.
+- La phrase à retenir. Le modèle appris ne suffit pas à lui seul.
+
+---
+
+## 9. Glossaire express
 
 | Terme | Sens |
 |---|---|
