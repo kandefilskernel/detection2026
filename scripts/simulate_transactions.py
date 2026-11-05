@@ -67,12 +67,15 @@ def add_demo_memos(rows: list[dict], seed: int = 7) -> None:
             r["memo"] = rnd.choice(DEMO_BENIGN_MEMOS)
 
 
-def load(n: int | None, skip: int, only_fraud: bool, fraud_users: int = 40, user_offset: int = 0) -> list[dict]:
+def load(n: int | None, skip: int, only_fraud: bool, fraud_users: int = 40, user_offset: int = 0,
+         all_data: bool = False) -> list[dict]:
     prep = json.loads((ROOT / "ml/artifacts/preprocessing.json").read_text(encoding="utf-8"))
     tx = pd.read_csv(ROOT / "ml/data/raw/transactions.csv")
     tx["timestamp"] = pd.to_datetime(tx["timestamp"])
     tx = tx.sort_values(["timestamp", "transaction_id"], kind="mergesort")
-    tx = tx[tx["timestamp"] >= pd.Timestamp(prep["split_bounds"]["test_from"])].iloc[skip:]
+    if not all_data:
+        tx = tx[tx["timestamp"] >= pd.Timestamp(prep["split_bounds"]["test_from"])]
+    tx = tx.iloc[skip:]
     if only_fraud:
         # épisodes de fraude + un peu de trafic normal autour, pour une démo lisible
         victims = list(dict.fromkeys(tx.loc[tx["is_fraud"] == 1, "user_id"]))
@@ -112,9 +115,12 @@ async def main():
                    help="DÉMO : ajoute des motifs de transfert rédigés par l'équipe (arnaques et messages anodins)")
     p.add_argument("--report", action="store_true",
                    help="détection en temps réel par type de fraude -> ml/reports/realtime_replay.json")
+    p.add_argument("--all", action="store_true",
+                   help="rejoue TOUT le CSV (entraînement compris), pas seulement la période de test : "
+                        "les mesures de détection sont alors optimistes")
     a = p.parse_args()
 
-    rows = load(a.n, a.skip, a.only_fraud_episodes, a.fraud_users, a.user_offset)
+    rows = load(a.n, a.skip, a.only_fraud_episodes, a.fraud_users, a.user_offset, a.all)
     if a.demo_memos:
         add_demo_memos(rows)
     if a.fresh_ids:
