@@ -145,7 +145,7 @@ def main() -> None:
     ax[0].plot(mv.index.to_timestamp(), mv.values, color=LEG, lw=1.4)
     ax[0].set(title="Transactions par mois", ylabel="transactions")
     ax[0].axvline(pd.Timestamp("2021-01-01"), color="#718096", ls="--", lw=.8)
-    ax[0].annotate("lancement de la carte Visa", (pd.Timestamp("2021-01-01"), mv.max() * .5), fontsize=7, color="#4a5568", rotation=90, va="center", ha="right")
+    ax[0].annotate("lancement de la carte virtuelle", (pd.Timestamp("2021-01-01"), mv.max() * .5), fontsize=7, color="#4a5568", rotation=90, va="center", ha="right")
     ax[1].bar(yr.index.astype(str), yr.rate * 100, color=FRA)
     for i, (y_, v) in enumerate(yr.rate.items()):
         ax[1].text(i, v * 100 + .02, f"{v * 100:.2f} %", ha="center", fontsize=7)
@@ -166,7 +166,7 @@ def main() -> None:
     # III.3 distribution des montants
     fig, ax = plt.subplots(1, 2, figsize=(10, 3.4), sharey=False)
     bins = np.logspace(-1, 3.7, 60)
-    for a, ch, lab in zip(ax, ("MOBILE_MONEY", "VISA_VIRTUAL"), ("Mobile Money", "Carte Visa virtuelle")):
+    for a, ch, lab in zip(ax, ("MOBILE_MONEY", "VISA_VIRTUAL"), ("Mobile Money", "Carte virtuelle")):
         g = tx[tx.channel == ch]
         a.hist(g[g.is_fraud == 0].amount_usd.clip(.1, 5000), bins=bins, color=LEG, alpha=.65, density=True, label="légitimes")
         a.hist(g[g.is_fraud == 1].amount_usd.clip(.1, 5000), bins=bins, color=FRA, alpha=.65, density=True, label="fraudes")

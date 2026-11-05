@@ -1,0 +1,56 @@
+/* Visuels LinkedIn 1080 x 1350 : palette sombre de l'annonce Kinga, fixe (une image n'a pas de thème). */
+:root {
+  --bg: #0D1A21; --surface: #13252E; --ink: #E7EEEC; --muted: #93A6AA; --line: #24404B;
+  --accent: #5CC3E0; --ok: #4CC58C; --warn: #F0B23E; --block: #FF6B5E; --block-soft: #3A1E1E;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1080px; height: 1350px; overflow: hidden; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); }
+.card { width: 1080px; height: 1350px; padding: 88px 84px 72px; display: flex; flex-direction: column; gap: 48px; }
+.brand { font: 500 24px var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 800 112px/0.95 var(--f-display); letter-spacing: -.035em; margin: 0; }
+h2 { font: 800 84px/1 var(--f-display); letter-spacing: -.03em; margin: 0; }
+.red { color: var(--block); }
+.lede { font-size: 34px; line-height: 1.4; color: var(--muted); margin: 0; }
+.lede b { color: var(--ink); font-weight: 600; }
+.foot { margin-top: auto; display: flex; justify-content: space-between; align-items: end; gap: 24px;
+  font: 400 22px var(--f-mono); color: var(--muted); border-top: 1px solid var(--line); padding-top: 24px; }
+.foot b { color: var(--ink); font-weight: 500; }
+
+/* Console */
+.console { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.c-head { display: flex; justify-content: space-between; padding: 22px 28px; border-bottom: 1px solid var(--line);
+  font: 500 22px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; }
+.c-head span:last-child { color: var(--muted); letter-spacing: 0; text-transform: none; }
+.dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--block); margin-right: 12px; vertical-align: 1px; }
+.row { display: grid; grid-template-columns: 170px 1fr auto; gap: 24px; align-items: center; padding: 20px 28px; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.pill { font: 500 19px var(--f-mono); text-align: center; padding: 8px 0; border-radius: 6px; letter-spacing: .05em; }
+.ok .pill { color: var(--ok); border: 2px solid currentColor; }
+.vf .pill { color: var(--warn); border: 2px solid currentColor; }
+.bl { background: var(--block-soft); }
+.bl .pill { background: var(--block); color: var(--bg); }
+.l1 { font-size: 27px; }
+.l2 { font: 400 20px var(--f-mono); color: var(--muted); margin-top: 4px; }
+.bl .l2 { color: var(--block); }
+.amt { font: 500 27px var(--f-mono); text-align: right; }
+.amt em { display: block; font-style: normal; font-size: 19px; color: var(--muted); }
+
+/* Chiffres */
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-top: 3px solid var(--ink); }
+.stats div { padding: 40px 32px 40px 0; border-bottom: 1px solid var(--line); }
+.stats b { display: block; font: 800 104px/1 var(--f-display); letter-spacing: -.03em; }
+.stats p { margin: 14px 0 0; font-size: 28px; line-height: 1.35; color: var(--muted); }
+
+/* Chaîne et types */
+.chain { display: grid; gap: 0; }
+.step { display: grid; grid-template-columns: 72px 1fr; gap: 28px; padding: 26px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.step .n { font: 500 40px var(--f-mono); color: var(--accent); }
+.step b { font: 600 34px var(--f-body); display: block; }
+.step span { font-size: 26px; color: var(--muted); }
+.types { display: flex; flex-wrap: wrap; gap: 14px; }
+.types span { font: 500 24px var(--f-mono); padding: 12px 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }

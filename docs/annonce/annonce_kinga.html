@@ -1,0 +1,220 @@
+<title>Kinga, fraude stoppée</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Mise en page : une annonce en deux temps — le slogan à gauche, le flux en direct à droite ; preuves chiffrées dessous. */
+:root {
+  --bg: #EEF1EE;
+  --surface: #FFFFFF;
+  --ink: #12222B;
+  --muted: #5A6B70;
+  --line: #D3DBD8;
+  --accent: #0F6E8C;
+  --ok: #1E8A5A;
+  --warn: #B87708;
+  --block: #C8372D;
+  --block-soft: #FBE7E4;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0D1A21; --surface: #13252E; --ink: #E7EEEC; --muted: #93A6AA; --line: #24404B;
+  --accent: #5CC3E0; --ok: #4CC58C; --warn: #F0B23E; --block: #FF6B5E; --block-soft: #3A1E1E; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0D1A21; --surface: #13252E; --ink: #E7EEEC; --muted: #93A6AA; --line: #24404B;
+  --accent: #5CC3E0; --ok: #4CC58C; --warn: #F0B23E; --block: #FF6B5E; --block-soft: #3A1E1E; color-scheme: dark }
+
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.5; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 48px; }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 40px; align-items: center; }
+.pitch { display: grid; gap: 20px; min-width: 0; }
+.brand { font-family: var(--f-mono); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(40px, 6.4vw, 78px); line-height: .95; letter-spacing: -.03em; margin: 0; text-wrap: balance; }
+h1 .ms { color: var(--block); font-variant-numeric: tabular-nums; }
+.lede { font-size: 19px; color: var(--muted); max-width: 34ch; margin: 0; }
+.lede strong { color: var(--ink); font-weight: 600; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn { font: 600 16px var(--f-body); background: var(--ink); color: var(--bg); border: 0; border-radius: 6px; padding: 14px 22px; cursor: pointer; }
+.btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.cta small { color: var(--muted); font-size: 14px; }
+
+/* Console du flux en direct */
+.console { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0;
+  box-shadow: 0 18px 40px -24px rgba(10, 30, 40, .45); }
+.c-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.live { display: inline-flex; gap: 8px; align-items: center; font: 500 12px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--block); animation: pulse 1.4s infinite; }
+@keyframes pulse { 50% { opacity: .25 } }
+.c-head .clock { font: 400 12px var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+.counters div { padding: 10px 14px; display: grid; gap: 2px; min-width: 0; }
+.counters div + div { border-left: 1px solid var(--line); }
+.counters span { font: 500 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.counters b { font: 500 20px var(--f-mono); font-variant-numeric: tabular-nums; }
+.counters .k-block b { color: var(--block); }
+.counters .k-ok b { color: var(--ok); }
+
+.feed { list-style: none; margin: 0; padding: 0; height: 372px; overflow: hidden; }
+.row { display: grid; grid-template-columns: 78px minmax(0, 1fr) auto; gap: 12px; align-items: center;
+  padding: 9px 16px; border-bottom: 1px solid var(--line); font-size: 14px; }
+.row.fresh { animation: drop .45s ease-out; }
+@keyframes drop { from { transform: translateY(-14px); opacity: .2 } }
+.pill { font: 500 11px var(--f-mono); letter-spacing: .06em; text-align: center; padding: 4px 0; border-radius: 4px; }
+.APPROVE .pill { color: var(--ok); border: 1px solid currentColor; }
+.VERIFY .pill { color: var(--warn); border: 1px solid currentColor; }
+.BLOCK { background: var(--block-soft); }
+.BLOCK .pill { background: var(--block); color: var(--surface); }
+.what { min-width: 0; overflow: hidden; }
+.what .l1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.what .l2 { font: 400 12px var(--f-mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.BLOCK .what .l2 { color: var(--block); }
+.amt { font: 500 14px var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.amt em { display: block; font-style: normal; font-size: 11px; color: var(--muted); }
+.c-foot { padding: 10px 16px; font-size: 12px; color: var(--muted); }
+
+/* Preuves */
+.proof { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 2px solid var(--ink); }
+.proof div { padding: 18px 20px 0 0; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.proof b { font-family: var(--f-display); font-weight: 800; font-size: clamp(34px, 4.4vw, 52px); line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.proof p { margin: 0; color: var(--muted); font-size: 15px; max-width: 26ch; }
+.source { font-size: 13px; color: var(--muted); margin: 0; max-width: 80ch; }
+
+.types { display: flex; flex-wrap: wrap; gap: 8px; }
+.types span { font: 500 13px var(--f-mono); padding: 6px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .proof { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 20px; }
+}
+@media (max-width: 460px) {
+  .counters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .counters div:nth-child(3) { border-left: 0; }
+  .counters div:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .row { grid-template-columns: 64px minmax(0, 1fr) auto; gap: 8px; padding: 9px 12px; }
+  .feed { height: 420px; }
+}
+@media (prefers-reduced-motion: reduce) { .dot, .row.fresh { animation: none; } }
+</style>
+
+<main class="wrap">
+  <section class="hero">
+    <div class="pitch">
+      <div class="brand">Kinga · protection Mobile Money RDC</div>
+      <h1>La fraude est arrêtée en <span class="ms">60&nbsp;ms</span>. L'argent reste chez vos clients.</h1>
+      <p class="lede">Chaque envoi, retrait chez l'agent ou paiement par carte virtuelle est analysé <strong>avant</strong> d'être exécuté. Les clients honnêtes passent sans attendre. Les fraudeurs sont bloqués à la première opération.</p>
+      <div class="cta">
+        <button class="btn" id="cta" type="button">Demander une démonstration</button>
+        <small id="cta-msg">Mobile money et cartes virtuelles, tous opérateurs.</small>
+      </div>
+    </div>
+
+    <div class="console" aria-label="Flux de transactions analysées en direct">
+      <div class="c-head">
+        <span class="live"><span class="dot"></span>En direct</span>
+        <span class="clock" id="clock">Kinshasa --:--:--</span>
+      </div>
+      <div class="counters">
+        <div><span>Analysées</span><b id="n-all">0</b></div>
+        <div class="k-ok"><span>Approuvées</span><b id="n-ok">0</b></div>
+        <div class="k-block"><span>Bloquées</span><b id="n-block">0</b></div>
+        <div><span>USD protégés</span><b id="n-usd">0</b></div>
+      </div>
+      <ul class="feed" id="feed"></ul>
+      <div class="c-foot">Animation d'illustration : les fraudes y sont plus fréquentes que dans la réalité pour être visibles.</div>
+    </div>
+  </section>
+
+  <section class="proof" aria-label="Résultats mesurés">
+    <div><b>111 / 111</b><p>épisodes de fraude détectés pendant le rejeu en temps réel</p></div>
+    <div><b>99,1&nbsp;%</b><p>des épisodes stoppés dès la toute première opération</p></div>
+    <div><b>59&nbsp;ms</b><p>de délai médian entre l'opérateur et la décision (104&nbsp;ms au 95<sup>e</sup> centile)</p></div>
+    <div><b>5</b><p>clients honnêtes bloqués sur 18&nbsp;883 transactions légitimes</p></div>
+  </section>
+
+  <div class="types" aria-label="Fraudes reconnues">
+    <span>Échange de carte SIM</span><span>Prise de contrôle de compte</span><span>Fraude d'agent</span>
+    <span>Ingénierie sociale</span><span>Test de carte</span><span>Paiement sans carte</span><span>Vidage par recharge</span>
+  </div>
+
+  <p class="source">Chiffres mesurés en rejouant 19&nbsp;165 transactions de la période de test, jamais vues pendant l'entraînement, à 15 transactions par seconde à travers toute la chaîne (réception opérateur, analyse, décision). Données simulées représentatives du marché congolais.</p>
+</main>
+
+<script>
+(() => {
+  const CITIES = ["Kinshasa", "Lubumbashi", "Goma", "Kisangani", "Bukavu", "Mbuji-Mayi", "Matadi", "Kananga"];
+  const LEGIT = [
+    ["Envoi à un proche", 4, 120], ["Retrait chez l'agent", 10, 200], ["Paiement marchand", 2, 60],
+    ["Achat de crédit", 1, 10], ["Facture SNEL", 8, 45], ["Paiement carte virtuelle", 5, 80], ["Cotisation tontine", 10, 50],
+  ];
+  const FRAUD = [
+    ["Retrait chez l'agent", "Échange de carte SIM, nouvel appareil", 150, 900],
+    ["Envoi à un inconnu", "Prise de contrôle du compte", 120, 700],
+    ["Dépôt agent", "Fraude d'agent, opérations fractionnées", 80, 400],
+    ["Envoi à un inconnu", "Ingénierie sociale, faux service client", 40, 300],
+    ["Paiement carte virtuelle", "Test de carte, 6 essais en 1 min", 1, 3],
+    ["Paiement en ligne", "Paiement sans carte, pays inhabituel", 60, 350],
+  ];
+  const $ = id => document.getElementById(id);
+  const feed = $("feed");
+  const n = { all: 0, ok: 0, block: 0, usd: 0 };
+  const fmt = v => Math.round(v).toLocaleString("fr-FR");
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const phone = () => "+243 8" + Math.floor(rnd(1, 10)) + " ••• " + String(Math.floor(rnd(10, 99)));
+
+  function tx(forceBlock) {
+    const r = forceBlock ? 0 : Math.random();
+    if (r < 0.09) {
+      const [label, why, lo, hi] = pick(FRAUD);
+      return { action: "BLOCK", label, why, usd: rnd(lo, hi), p: rnd(0.93, 0.999) };
+    }
+    const [label, lo, hi] = pick(LEGIT);
+    if (r < 0.12) return { action: "VERIFY", label, why: "Confirmation demandée par SMS", usd: rnd(lo, hi) * 2.5, p: rnd(0.4, 0.7) };
+    return { action: "APPROVE", label, why: "", usd: rnd(lo, hi), p: rnd(0.001, 0.04) };
+  }
+
+  function push(fresh, forceBlock) {
+    const t = tx(forceBlock);
+    const ms = Math.round(t.action === "BLOCK" ? rnd(48, 96) : rnd(38, 88));
+    n.all++;
+    if (t.action === "APPROVE") n.ok++;
+    if (t.action === "BLOCK") { n.block++; n.usd += t.usd; }
+    const li = document.createElement("li");
+    li.className = "row " + t.action + (fresh ? " fresh" : "");
+    const tag = { APPROVE: "APPROUVÉ", VERIFY: "VÉRIFIER", BLOCK: "BLOQUÉ" }[t.action];
+    const l2 = t.action === "APPROVE"
+      ? `${pick(CITIES)} · ${phone()} · risque ${(t.p * 100).toFixed(1)} %`
+      : `${t.why} · risque ${(t.p * 100).toFixed(0)} %`;
+    li.innerHTML = `<span class="pill">${tag}</span>
+      <div class="what"><div class="l1">${t.label}</div><div class="l2">${l2}</div></div>
+      <div class="amt">${t.usd.toFixed(2)} $<em>${ms} ms</em></div>`;
+    feed.prepend(li);
+    while (feed.children.length > 14) feed.lastElementChild.remove();
+    $("n-all").textContent = fmt(n.all);
+    $("n-ok").textContent = fmt(n.ok);
+    $("n-block").textContent = fmt(n.block);
+    $("n-usd").textContent = fmt(n.usd);
+  }
+
+  function clock() {
+    const s = new Date().toLocaleTimeString("fr-FR", { timeZone: "Africa/Kinshasa" });
+    $("clock").textContent = "Kinshasa " + s;
+  }
+
+  // État initial déjà rempli, avec au moins un blocage visible.
+  for (let i = 0; i < 11; i++) push(false, i === 8);
+  clock();
+  setInterval(clock, 1000);
+  const slow = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  (function loop() { push(true); setTimeout(loop, slow ? 2600 : rnd(550, 1300)); })();
+
+  $("cta").addEventListener("click", () => {
+    $("cta-msg").textContent = "Merci. Écrivez à l'équipe pour fixer une démonstration en direct.";
+  });
+})();
+</script>
