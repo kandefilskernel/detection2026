@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nuru_secure_password_2026}
       POSTGRES_DB: ${POSTGRES_DB:-fraud_detection_db}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -234,6 +234,7 @@ services:
     container_name: nuru_drift_monitor
     command: ["python", "-m", "ml.monitoring.drift_detector", "--serve", "--interval", "60"]
     restart: unless-stopped
+    cpus: "1.0"                        # tâche de fond : ne doit jamais priver le scoring temps réel de processeur
     env_file: .env
     environment:
       POSTGRES_HOST: postgres
@@ -242,6 +243,21 @@ services:
       - ./ml/artifacts:/srv/ml/artifacts:ro
     depends_on:
       backoffice-api:
+        condition: service_healthy
+
+  # Simulateur de trafic piloté depuis le tableau de bord (page « Simulateur », API /simulator du back-office)
+  simulator:
+    image: fraud-rdc/scoring-service:dev
+    container_name: nuru_simulator
+    working_dir: /work
+    entrypoint: ["sh", "-c", "pip install -q --user --no-warn-script-location httpx==0.27.0 && exec python scripts/sim_control.py"]
+    restart: unless-stopped
+    environment:
+      PYTHONPATH: /work
+    volumes:
+      - ./:/work:ro
+    depends_on:
+      integration-layer:
         condition: service_healthy
 
   # Apprentissage continu : réentraîne quand assez d'étiquettes, dérive ou modèle trop ancien

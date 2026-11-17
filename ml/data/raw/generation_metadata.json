@@ -1,7 +1,7 @@
 {
   "config": {
     "n_users": 500,
-    "n_days": 2557,
+    "n_days": 2878,
     "start_date": "2019-01-01",
     "seed": 42,
     "usd_cdf_rate": 2850.0,
@@ -13,8 +13,8 @@
     "n_agents": 800,
     "n_mm_merchants": 600,
     "n_card_merchants": 300,
-    "output_dir": "ml/data/raw_2019_2025",
-    "end_date": "2025-12-31",
+    "output_dir": "ml/data/raw",
+    "end_date": "2026-11-17",
     "onboarding": true,
     "initial_user_share": 0.35,
     "activity_growth": 0.08,
@@ -24,153 +24,168 @@
     "realistic_travel": true
   },
   "summary": {
-    "n_transactions": 631968,
+    "n_transactions": 738901,
     "period": [
-      "2019-01-01 00:25:59",
-      "2025-12-31 23:45:15"
+      "2019-01-01 01:16:38",
+      "2026-11-17 23:51:06"
     ],
-    "fraud_rate_global": 0.01333,
+    "fraud_rate_global": 0.01323,
     "by_channel": {
       "MOBILE_MONEY": {
-        "n": 598515,
-        "fraud_rate": 0.01237
+        "n": 703047,
+        "fraud_rate": 0.01234
       },
       "VISA_VIRTUAL": {
-        "n": 33453,
-        "fraud_rate": 0.03055
+        "n": 35854,
+        "fraud_rate": 0.03074
       }
     },
     "fraud_transactions_by_type": {
-      "SIM_SWAP": 2220,
-      "SOCIAL_ENGINEERING": 1850,
-      "SMURFING": 1334,
-      "ACCOUNT_TAKEOVER": 1112,
-      "AGENT_FRAUD": 888,
-      "CNP_FRAUD": 406,
-      "CARD_TESTING": 362,
-      "TOPUP_DRAIN": 254
+      "SIM_SWAP": 2601,
+      "SOCIAL_ENGINEERING": 2168,
+      "SMURFING": 1562,
+      "ACCOUNT_TAKEOVER": 1302,
+      "AGENT_FRAUD": 1040,
+      "CNP_FRAUD": 438,
+      "CARD_TESTING": 390,
+      "TOPUP_DRAIN": 274
     },
     "fraud_episodes_by_type": {
-      "ACCOUNT_TAKEOVER": 371,
-      "AGENT_FRAUD": 604,
-      "CARD_TESTING": 42,
-      "CNP_FRAUD": 195,
-      "SIM_SWAP": 627,
-      "SMURFING": 129,
-      "SOCIAL_ENGINEERING": 977,
-      "TOPUP_DRAIN": 83
+      "ACCOUNT_TAKEOVER": 427,
+      "AGENT_FRAUD": 699,
+      "CARD_TESTING": 46,
+      "CNP_FRAUD": 220,
+      "SIM_SWAP": 739,
+      "SMURFING": 145,
+      "SOCIAL_ENGINEERING": 1147,
+      "TOPUP_DRAIN": 97
     },
-    "failure_rate_legit": 0.00917,
-    "failure_rate_fraud": 0.05958,
+    "failure_rate_legit": 0.0083,
+    "failure_rate_fraud": 0.06128,
     "tx_type_distribution": {
-      "P2P_RECEIVE": 140780,
-      "P2P_SEND": 134191,
-      "CASH_IN": 96852,
-      "CASH_OUT": 91889,
-      "AIRTIME": 52735,
-      "MERCHANT_PAYMENT": 52708,
-      "BILL_PAYMENT": 29360,
-      "CARD_PURCHASE": 19003,
-      "CARD_TOPUP": 14450
+      "P2P_RECEIVE": 164951,
+      "P2P_SEND": 157541,
+      "CASH_IN": 113728,
+      "CASH_OUT": 108545,
+      "AIRTIME": 61795,
+      "MERCHANT_PAYMENT": 61596,
+      "BILL_PAYMENT": 34891,
+      "CARD_PURCHASE": 20439,
+      "CARD_TOPUP": 15415
     },
     "by_year": {
       "2019": {
-        "n": 35541,
-        "fraud_rate": 0.01044,
+        "n": 35089,
+        "fraud_rate": 0.00952,
         "visa_share": 0.0,
         "fraud_by_type": {
-          "SMURFING": 99,
-          "AGENT_FRAUD": 92,
-          "SIM_SWAP": 83,
-          "SOCIAL_ENGINEERING": 65,
-          "ACCOUNT_TAKEOVER": 32
+          "AGENT_FRAUD": 105,
+          "SMURFING": 85,
+          "SIM_SWAP": 64,
+          "SOCIAL_ENGINEERING": 60,
+          "ACCOUNT_TAKEOVER": 20
         }
       },
       "2020": {
-        "n": 41937,
-        "fraud_rate": 0.01054,
+        "n": 41131,
+        "fraud_rate": 0.01002,
         "visa_share": 0.0,
         "fraud_by_type": {
-          "AGENT_FRAUD": 124,
-          "SIM_SWAP": 110,
-          "SOCIAL_ENGINEERING": 91,
-          "SMURFING": 68,
+          "SOCIAL_ENGINEERING": 118,
+          "AGENT_FRAUD": 100,
+          "SIM_SWAP": 85,
+          "SMURFING": 60,
           "ACCOUNT_TAKEOVER": 49
         }
       },
       "2021": {
-        "n": 60402,
-        "fraud_rate": 0.01207,
-        "visa_share": 0.0716,
+        "n": 56171,
+        "fraud_rate": 0.01278,
+        "visa_share": 0.0654,
         "fraud_by_type": {
-          "SIM_SWAP": 201,
-          "SOCIAL_ENGINEERING": 116,
-          "SMURFING": 108,
-          "AGENT_FRAUD": 91,
-          "CARD_TESTING": 88,
-          "ACCOUNT_TAKEOVER": 73,
-          "CNP_FRAUD": 36,
-          "TOPUP_DRAIN": 16
+          "SIM_SWAP": 217,
+          "SMURFING": 130,
+          "AGENT_FRAUD": 121,
+          "SOCIAL_ENGINEERING": 91,
+          "ACCOUNT_TAKEOVER": 63,
+          "CARD_TESTING": 44,
+          "CNP_FRAUD": 37,
+          "TOPUP_DRAIN": 15
         }
       },
       "2022": {
-        "n": 80066,
-        "fraud_rate": 0.01454,
-        "visa_share": 0.0646,
+        "n": 73429,
+        "fraud_rate": 0.01336,
+        "visa_share": 0.0602,
         "fraud_by_type": {
-          "SIM_SWAP": 335,
-          "SOCIAL_ENGINEERING": 212,
-          "SMURFING": 197,
-          "AGENT_FRAUD": 129,
-          "ACCOUNT_TAKEOVER": 98,
-          "CARD_TESTING": 70,
-          "CNP_FRAUD": 67,
-          "TOPUP_DRAIN": 56
+          "SIM_SWAP": 316,
+          "SOCIAL_ENGINEERING": 183,
+          "AGENT_FRAUD": 143,
+          "SMURFING": 140,
+          "ACCOUNT_TAKEOVER": 85,
+          "CARD_TESTING": 45,
+          "TOPUP_DRAIN": 35,
+          "CNP_FRAUD": 34
         }
       },
       "2023": {
-        "n": 104108,
-        "fraud_rate": 0.01392,
-        "visa_share": 0.0582,
+        "n": 94271,
+        "fraud_rate": 0.01525,
+        "visa_share": 0.0552,
         "fraud_by_type": {
-          "SIM_SWAP": 461,
-          "SOCIAL_ENGINEERING": 295,
-          "ACCOUNT_TAKEOVER": 203,
-          "SMURFING": 185,
-          "AGENT_FRAUD": 141,
-          "CARD_TESTING": 65,
-          "CNP_FRAUD": 51,
-          "TOPUP_DRAIN": 48
+          "SIM_SWAP": 438,
+          "SOCIAL_ENGINEERING": 285,
+          "SMURFING": 226,
+          "ACCOUNT_TAKEOVER": 184,
+          "AGENT_FRAUD": 119,
+          "CARD_TESTING": 97,
+          "CNP_FRAUD": 66,
+          "TOPUP_DRAIN": 23
         }
       },
       "2024": {
-        "n": 134554,
-        "fraud_rate": 0.01424,
-        "visa_share": 0.0576,
+        "n": 119521,
+        "fraud_rate": 0.01323,
+        "visa_share": 0.0518,
         "fraud_by_type": {
-          "SOCIAL_ENGINEERING": 461,
-          "SIM_SWAP": 445,
-          "SMURFING": 374,
-          "ACCOUNT_TAKEOVER": 259,
-          "AGENT_FRAUD": 143,
-          "CNP_FRAUD": 124,
-          "CARD_TESTING": 58,
-          "TOPUP_DRAIN": 52
+          "SIM_SWAP": 439,
+          "SOCIAL_ENGINEERING": 372,
+          "ACCOUNT_TAKEOVER": 271,
+          "SMURFING": 203,
+          "AGENT_FRAUD": 129,
+          "CNP_FRAUD": 70,
+          "CARD_TESTING": 50,
+          "TOPUP_DRAIN": 47
         }
       },
       "2025": {
-        "n": 175360,
-        "fraud_rate": 0.01343,
-        "visa_share": 0.0578,
+        "n": 151464,
+        "fraud_rate": 0.01386,
+        "visa_share": 0.0509,
         "fraud_by_type": {
-          "SOCIAL_ENGINEERING": 610,
-          "SIM_SWAP": 585,
-          "ACCOUNT_TAKEOVER": 398,
-          "SMURFING": 303,
-          "AGENT_FRAUD": 168,
-          "CNP_FRAUD": 128,
-          "TOPUP_DRAIN": 82,
-          "CARD_TESTING": 81
+          "SIM_SWAP": 504,
+          "SOCIAL_ENGINEERING": 486,
+          "SMURFING": 366,
+          "ACCOUNT_TAKEOVER": 301,
+          "AGENT_FRAUD": 162,
+          "CNP_FRAUD": 96,
+          "TOPUP_DRAIN": 93,
+          "CARD_TESTING": 91
+        }
+      },
+      "2026": {
+        "n": 167825,
+        "fraud_rate": 0.01318,
+        "visa_share": 0.0516,
+        "fraud_by_type": {
+          "SOCIAL_ENGINEERING": 573,
+          "SIM_SWAP": 538,
+          "SMURFING": 352,
+          "ACCOUNT_TAKEOVER": 329,
+          "AGENT_FRAUD": 161,
+          "CNP_FRAUD": 135,
+          "CARD_TESTING": 63,
+          "TOPUP_DRAIN": 61
         }
       }
     }

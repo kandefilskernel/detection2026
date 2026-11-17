@@ -23,7 +23,7 @@ from app import events
 from app.config import settings
 from app.db import SessionLocal, engine
 from app.routers import (audit, auth, cases, fairness, feedback, institutions, network, nlp, policy, reports, retraining,
-                         transactions)
+                         simulator, transactions)
 from shared.logging.logger_config import configure_logging
 
 configure_logging("backoffice-api")
@@ -46,7 +46,7 @@ Instrumentator(excluded_handlers=["/metrics", "/health"]).instrument(app)
 
 for r in (auth.router, transactions.router, cases.router, reports.router, audit.router, nlp.router, retraining.router,
           institutions.router, network.router, feedback.router, policy.router,
-          fairness.router):
+          fairness.router, simulator.router):
     app.include_router(r)
 
 
