@@ -36,7 +36,7 @@ class TxSummary(BaseModel):
     latency_ms: float
     label: int | None
 
-    model_config = {"from_attributes": True}
+    model_config = {"from_attributes": True, "protected_namespaces": ()}
 
 
 class TxDetail(TxSummary):

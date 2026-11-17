@@ -140,8 +140,8 @@ def recently_waiting(engine, reasons: list, cfg: Config) -> bool:
     """Évite d'inscrire la même attente toutes les 10 minutes."""
     with engine.connect() as c:
         row = c.execute(text("SELECT reasons FROM retrain_events WHERE status = 'EN_ATTENTE' "
-                             "AND ts > now() - make_interval(hours => :h) ORDER BY ts DESC LIMIT 1"),
-                        {"h": cfg.wait_log_h}).first()
+                             "AND ts > now() - make_interval(secs => :s) ORDER BY ts DESC LIMIT 1"),
+                        {"s": float(cfg.wait_log_h) * 3600}).first()
     return bool(row) and sorted(row[0]) == sorted(reasons)
 
 

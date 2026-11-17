@@ -77,12 +77,14 @@ def compare(reference: dict, cur_features: np.ndarray, cur_scores: np.ndarray) -
     ref = reference["features"]
     per_feature = {}
     for j, name in enumerate(names):
-        d, p = ks_2samp(ref[:, j], cur_features[:, j])
+        # méthode asymptotique : la méthode « exacte » (choisie par défaut jusqu'à 10 000 lignes) coûte
+        # ~7x plus de CPU pour la même statistique D, et volait le processeur au scoring en temps réel
+        d, p = ks_2samp(ref[:, j], cur_features[:, j], method="asymp")
         v = psi(ref[:, j], cur_features[:, j])
         per_feature[name] = {"ks_d": round(float(d), 4), "ks_p": float(p), "psi": round(v, 4),
                              "family": feature_family(name),
                              "drift": bool((d > KS_D and p < KS_P) or v > PSI_MAX)}
-    sd, sp = ks_2samp(reference["scores"], cur_scores)
+    sd, sp = ks_2samp(reference["scores"], cur_scores, method="asymp")
     score = {"ks_d": round(float(sd), 4), "ks_p": float(sp), "psi": round(psi(reference["scores"], cur_scores), 4)}
     # alarme : variables comportementales en dérive, ou score du modèle déplacé
     drifted = sorted(n for n, r in per_feature.items() if r["drift"] and r["family"] == "comportementale")

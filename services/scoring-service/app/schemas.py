@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class FeatureContribution(BaseModel):
@@ -20,6 +20,7 @@ class FraudTypeCandidate(BaseModel):
 
 
 class ScoreResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     transaction_id: str
     duplicate: bool = False     # True : transaction déjà scorée, la décision d'origine est renvoyée sans nouveau calcul
     fraud_probability: float
